@@ -50,8 +50,8 @@ def build_data_cv(good_stats_list, cv=10, clean_string=True):
 
 	# loading data
 	print 'pulling game data ...'
-	min_year = 10 #1
-	max_year = 13
+	min_year = 14 #1
+	max_year = 14
 	for c in range(min_year,max_year+1):
 		year_indicator = "%02d" % (c,)
 		for m in range(1,10000):
@@ -181,5 +181,5 @@ if __name__=="__main__":
 						'FT_PCT','OREB','DREB','REB','AST','STL','BLK','TO','PF',
 						'PTS','PLUS_MINUS']
 	revs, W, word_idx_map = build_data_cv(good_stats_list, cv=10, clean_string=True)
-	cPickle.dump([revs, W, word_idx_map], open("mr.p", "wb"))
+	cPickle.dump([revs, W, word_idx_map], open("mr_prediction.p", "wb"))
 	print "dataset created!"
