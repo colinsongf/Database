@@ -47,6 +47,7 @@ def build_data_cv(good_stats_list, cv=10, clean_string=True):
 	# loading game data
 	print 'pulling game data ...'
 	revs = []
+	revs_header = []
 	k = len(good_stats_list) + 1
 	W = []
 	W.append([0.0]*k)
@@ -167,6 +168,8 @@ def build_data_cv(good_stats_list, cv=10, clean_string=True):
 					player_dict = dict(player_histories[player_key]['avg'])
 					player_dict['TEAM'] = team_var
 					for key in sorted(player_dict):
+						if player_game_counter == 0:
+							revs_header.append(key)
 						player_list.append(player_dict[key])
 					W.append(player_list)
 					player_game_counter = player_game_counter + 1
@@ -185,15 +188,17 @@ def build_data_cv(good_stats_list, cv=10, clean_string=True):
 			# formatting data output
 			padding = 15
 			padding_2 = 5
-			home_player_list = [x for (y,x) in sorted(zip(home_player_sort_list,home_player_list), reverse=True)]
-			away_player_list = [x for (y,x) in sorted(zip(away_player_sort_list,away_player_list), reverse=True)]
+			home_player_list = [x for (q,x) in sorted(zip(home_player_sort_list,home_player_list), reverse=True)]
+			away_player_list = [x for (q,x) in sorted(zip(away_player_sort_list,away_player_list), reverse=True)]
 			while len(home_player_list) < padding :
 				home_player_list.append('-1')
 			while len(away_player_list) < padding :
 				away_player_list.append('-1')
+
 			text = ' '.join(['-2'] + ['-1']*padding_2 + home_player_list + ['-1']*padding_2  + away_player_list)
 			datum  = {"y": y,
 					  "text": text,
+					  "game_id": game_id,
 					  "split": np.random.randint(0,cv)}
 			revs.append(datum)
 			file_counter = file_counter + 1
@@ -205,12 +210,33 @@ def build_data_cv(good_stats_list, cv=10, clean_string=True):
 	W2 = np.zeros(shape=(player_game_counter+1, k))
 	for z in range(0,len(W)):
 		W2[z] = W[z]
-	return revs, W2, word_idx_map
+	return revs, W2, word_idx_map, revs_header
 
 if __name__=="__main__":
 	good_stats_list = ['FGM','FGA','FG_PCT','FG3M','FG3A','FG3_PCT','FTM','FTA',
 						'FT_PCT','OREB','DREB','REB','AST','STL','BLK','TO','PF',
 						'PTS','PLUS_MINUS']
-	revs, W, word_idx_map = build_data_cv(good_stats_list, cv=10, clean_string=True)
+	revs, W, word_idx_map, revs_header = build_data_cv(good_stats_list, cv=10, clean_string=True)
 	cPickle.dump([revs, W, word_idx_map], open("mr.p", "wb"))
 	print "dataset created!"
+
+	# outputting full formatted file for visual checking
+	full_output = {}
+	full_output['games'] = {}
+	full_output['header'] = ', '.join(map(str,revs_header))
+	print "outputting checking data file ... "
+	for rev in revs:
+		game_id = str(int(rev['game_id']))
+		full_output['games'][game_id] = {}
+		full_output['games'][game_id]['y'] = str(int(rev['y']))
+		full_output['games'][game_id]['image'] = {}
+		map_key = rev['text'].split(' ')
+		for j in range(0,len(map_key)):
+			list_val = list(W[word_idx_map[map_key[j]]])
+			full_output['games'][game_id]['image'][str(j)] = {}
+			full_output['games'][game_id]['image'][str(j)]['data'] = ', '.join(map(str,list_val))
+			full_output['games'][game_id]['image'][str(j)]['player'] = map_key[j].split('_')[0]
+	f_out = open('process_data_running_stats_checking.txt','w')
+	f_out.write(str(full_output))
+	f_out.close()
+	print "checked file created!"
