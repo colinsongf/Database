@@ -1,14 +1,14 @@
-from psycopg2.extras import DictCursor
-from random import shuffle
-from pprint import pprint
-import psycopg2
+# from psycopg2.extras import DictCursor
+# from random import shuffle
+# from pprint import pprint
+# import psycopg2
 import numpy as np
 import cPickle
-from collections import defaultdict
-import sys, re
-import pandas as pd
+# from collections import defaultdict
+# import sys, re
+# import pandas as pd
 import json
-import csv
+# import csv
 
 def build_data_cv(good_stats_list, cv=10, clean_string=True):
 	"""
@@ -25,7 +25,7 @@ def build_data_cv(good_stats_list, cv=10, clean_string=True):
 	line_counter = -1
 	line_header = []
 	line_data = {}
-	f = open('/Users/terryjames/Dropbox/Public/NBA data/NBA_OU_data (since 2000).csv','r')
+	f = open('/','r')
 	for line in f:
 		rows = line.split('\r')
 		for row in rows:
