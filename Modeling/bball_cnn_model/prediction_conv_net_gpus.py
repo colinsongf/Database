@@ -96,12 +96,10 @@ def make_idx_data_cv(revs, word_idx_map, max_l=51, k=300, filter_h=5):
 if __name__=="__main__":
 
     print "loading data..."
-    x = cPickle.load(open("mr.p","rb"))
+    x = cPickle.load(open("mr_prediction.p","rb"))
     revs, W, word_idx_map = x[0], x[1], x[2]
     U = W.astype(dtype="float32")
-    x_pred = cPickle.load(open("mr_prediction.p","rb"))
-    revs = x_pred[0]
-    datasets = make_idx_data_cv(revs, word_idx_map, max_l=56,k=20, filter_h=5)
+    datasets = make_idx_data_cv(revs, word_idx_map, max_l=56,k=40, filter_h=5)
     execfile("conv_net_classes.py")
 
     print "loading model..."
@@ -115,7 +113,7 @@ if __name__=="__main__":
     W_conv2_params = x[6].get_value()
     b_conv2_params = x[7].get_value()
 
-    img_w=20
+    img_w=40
     lr_decay=0.95
     filter_hs=[2,3,4,5]
     conv_non_linear="relu"

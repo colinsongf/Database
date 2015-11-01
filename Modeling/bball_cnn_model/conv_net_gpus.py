@@ -53,7 +53,7 @@ def Iden(x):
 
 def train_conv_net(datasets,
                    U,
-                   img_w=20,
+                   img_w=40,
                    filter_hs=[2,3,4,5],
                    hidden_units=[100,2],
                    dropout_rate=[0.5],
@@ -68,7 +68,7 @@ def train_conv_net(datasets,
     """
     Train a simple conv net
     img_h = sentence length (padded where necessary)
-    img_w = word vector length (20 for word2vec)
+    img_w = word vector length (40 for word2vec)
     filter_hs = filter window sizes
     hidden_units = [x,y] x is the number of feature maps (per filter window), and y is the penultimate layer
     sqr_norm_lim = s^2 in the paper
@@ -271,7 +271,7 @@ def safe_update(dict_to, dict_from):
         dict_to[key] = val
     return dict_to
 
-def get_idx_from_sent(sent, word_idx_map, max_l=51, k=20, filter_h=5):
+def get_idx_from_sent(sent, word_idx_map, max_l=51, k=40, filter_h=5):
     """
     Transforms sentence into a list of indices. Pad with zeroes.
     """
@@ -287,7 +287,7 @@ def get_idx_from_sent(sent, word_idx_map, max_l=51, k=20, filter_h=5):
         x.append(0)
     return x
 
-def make_idx_data_cv(revs, word_idx_map, cv, max_l=51, k=20, filter_h=5):
+def make_idx_data_cv(revs, word_idx_map, cv, max_l=51, k=40, filter_h=5):
     """
     Transforms sentences into a 2-d matrix.
     """
@@ -320,7 +320,7 @@ if __name__=="__main__":
     results = []
     r = range(0,1) # r = range(0,10)
     for i in r:
-        datasets = make_idx_data_cv(revs, word_idx_map, i, max_l=56,k=20, filter_h=5)
+        datasets = make_idx_data_cv(revs, word_idx_map, i, max_l=56,k=40, filter_h=5)
         perf = train_conv_net(datasets,
                               U,
                               lr_decay=0.95,
