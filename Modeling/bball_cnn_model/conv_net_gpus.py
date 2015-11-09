@@ -53,12 +53,12 @@ def Iden(x):
 
 def train_conv_net(datasets,
                    U,
-                   img_w=40,
-                   filter_hs=[2,3,4,5],
-                   hidden_units=[100,2],
+                   img_w,
+                   filter_hs,
+                   hidden_units,
                    dropout_rate=[0.5],
                    shuffle_batch=True,
-                   n_epochs=2,
+                   n_epochs=10,
                    batch_size=50,
                    lr_decay = 0.95,
                    conv_non_linear="relu",
@@ -68,7 +68,7 @@ def train_conv_net(datasets,
     """
     Train a simple conv net
     img_h = sentence length (padded where necessary)
-    img_w = word vector length (40 for word2vec)
+    img_w = word vector length
     filter_hs = filter window sizes
     hidden_units = [x,y] x is the number of feature maps (per filter window), and y is the penultimate layer
     sqr_norm_lim = s^2 in the paper
@@ -125,7 +125,7 @@ def train_conv_net(datasets,
 
     #shuffle dataset and assign to mini batches. if dataset size is not a multiple of mini batches, replicate
     #extra data (at random)
-    np.random.seed(3435)
+    np.random.seed(3455)
     if datasets[0].shape[0] % batch_size > 0:
         extra_data_num = batch_size - datasets[0].shape[0] % batch_size
         train_set = np.random.permutation(datasets[0])
@@ -271,7 +271,7 @@ def safe_update(dict_to, dict_from):
         dict_to[key] = val
     return dict_to
 
-def get_idx_from_sent(sent, word_idx_map, max_l=51, k=40, filter_h=5):
+def get_idx_from_sent(sent, word_idx_map, k, filter_h, max_l=51):
     """
     Transforms sentence into a list of indices. Pad with zeroes.
     """
@@ -287,13 +287,13 @@ def get_idx_from_sent(sent, word_idx_map, max_l=51, k=40, filter_h=5):
         x.append(0)
     return x
 
-def make_idx_data_cv(revs, word_idx_map, cv, max_l=51, k=40, filter_h=5):
+def make_idx_data_cv(revs, word_idx_map, cv, k, filter_h, max_l=51):
     """
     Transforms sentences into a 2-d matrix.
     """
     train, test = [], []
     for rev in revs:
-        sent = get_idx_from_sent(rev["text"], word_idx_map, max_l, k, filter_h)
+        sent = get_idx_from_sent(rev["text"], word_idx_map, k, filter_h, max_l)
         if max(sent) > 0:
             sent.append(rev["y"])
             if rev["split"]==cv:
@@ -312,6 +312,14 @@ if __name__=="__main__":
     x = cPickle.load(open("mr.p","rb"))
     revs, W, word_idx_map= x[0], x[1], x[2]
     log_write("data loaded!")
+    sample_row = W[word_idx_map[((revs[0]['text']).split())[0]]]
+    k = len(sample_row)
+
+    max_filter = 5
+    filter_hs = [3,4,max_filter]
+    feature_maps_per_filter = 50
+    hidden_units = [feature_maps_per_filter,2]
+
     mode = "-static"
     word_vectors = "-word2vec"
     non_static=False
@@ -320,15 +328,16 @@ if __name__=="__main__":
     results = []
     r = range(0,1) # r = range(0,10)
     for i in r:
-        datasets = make_idx_data_cv(revs, word_idx_map, i, max_l=56,k=40, filter_h=5)
+        datasets = make_idx_data_cv(revs, word_idx_map, i, k, max_filter, max_l=56)
         perf = train_conv_net(datasets,
                               U,
+                              k,
+                              filter_hs,
+                              hidden_units,
                               lr_decay=0.95,
-                              filter_hs=[2,3,4,5],
                               conv_non_linear="relu",
-                              hidden_units=[100,2],
                               shuffle_batch=True,
-                              n_epochs=2,
+                              n_epochs=10,
                               sqr_norm_lim=9,
                               non_static=non_static,
                               batch_size=50,
