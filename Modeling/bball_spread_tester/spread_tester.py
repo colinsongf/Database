@@ -27,7 +27,7 @@ def import_lines(year_indicator):  # imports csv file with line data
 
 
 def import_wagers():  # imports csv file with games to be bet on
-    wagers_filepath = './linedata/wagers.csv'
+    wagers_filepath = './linedata/twagers.csv'
     df2 = pd.read_csv(wagers_filepath, index_col='game_id')
     return df2
 
@@ -46,6 +46,27 @@ def calculate_roi(df_roi):  # calculates roi based on winning/losing bets
     return profit / buyins
 
 
+def output(df):  # constructs summary report by team
+    output = pd.read_csv('./linedata/teamlist.csv', index_col='Team')
+    for game_id, row in df.iterrows():
+        home_team, away_team = row['home_team'], row['away_team']
+        bet_on = home_team if row.loc['home_wins'] == 'W' else away_team
+        bet_against = away_team if row.loc['home_wins'] == 'W' else home_team
+        if row.loc['result'] == 1:
+            output.loc[bet_on, 'wins_on'] += 1
+            output.loc[bet_against, 'wins_against'] += 1
+        else:
+            output.loc[bet_on, 'losses_on'] += 1
+            output.loc[bet_against, 'losses_against'] += 1
+    for team, row in output.iterrows():
+        output.loc[team, 'On'] = (row.loc['wins_on'] / (row.loc['losses_on'] +
+                                  row.loc['wins_on']) * 100)
+        output.loc[team, 'Against'] = (row.loc['wins_against'] /
+                                       (row.loc['losses_against'] +
+                                       row.loc['wins_against']) * 100)
+    return output
+
+
 if __name__ == "__main__":
     year_indicator = '2014'  # replace with season year or 'all'
     df1 = import_lines(year_indicator)
@@ -55,12 +76,16 @@ if __name__ == "__main__":
 
     for game_id, row in df2.iterrows():  # iterates through the bets made
         num_wagers += 1
+        df2.loc[game_id, 'home_team'] = df1.loc[game_id, 'Team']
+        df2.loc[game_id, 'away_team'] = df1.loc[game_id, 'Opp']
         if (df1.loc[game_id, 'ATSr'] == row.loc['home_wins']):
             df2.loc[game_id, 'result'] = 1  # records if the bet won
             num_wins += 1
         else:
             df2.loc[game_id, 'result'] = 0
     roi = calculate_roi(df2)*100
-    output = ("Games in season: %d\nBets: %d\nWins: %d\nROI: %.2f%%"
-              % (num_games, num_wagers, num_wins, roi))
-    print output
+    output = output(df2)
+    output.to_csv('summary.csv')
+    winrate = ("Games in season: %d\nBets: %d\nWins: %d\nROI: %.2f%%"
+               % (num_games, num_wagers, num_wins, roi))
+    print winrate
