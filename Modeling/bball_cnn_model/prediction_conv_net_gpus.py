@@ -58,7 +58,7 @@ def safe_update(dict_to, dict_from):
         dict_to[key] = val
     return dict_to
 
-def get_idx_from_sent(sent, word_idx_map, max_l=51, k=300, filter_h=5):
+def get_idx_from_sent(sent, word_idx_map, k, filter_h, max_l=51):
     """
     Transforms sentence into a list of indices. Pad with zeroes.
     """
@@ -74,7 +74,7 @@ def get_idx_from_sent(sent, word_idx_map, max_l=51, k=300, filter_h=5):
         x.append(0)
     return x
 
-def make_idx_data_cv(revs, word_idx_map, max_l=51, k=300, filter_h=5):
+def make_idx_data_cv(revs, word_idx_map, k, filter_h, max_l=51):
     """
     Transforms sentences into a 2-d matrix.
     """
@@ -82,11 +82,12 @@ def make_idx_data_cv(revs, word_idx_map, max_l=51, k=300, filter_h=5):
     prediction_counter = 0
     train, test = [], []
     for rev in revs:
-        sent = get_idx_from_sent(rev["text"], word_idx_map, max_l, k, filter_h)
+        sent = get_idx_from_sent(rev["text"], word_idx_map, k, filter_h, max_l)
         if max(sent) > 0:
             test.append(sent)
             prediction_list.append({})
             prediction_list[prediction_counter]["text"] = rev["text"]
+            prediction_list[prediction_counter]["game_id"] = rev["game_id"]
             prediction_list[prediction_counter]["known_category"] = rev["y"]
             prediction_counter = prediction_counter + 1
     print "Number of urls to predict: " + str(len(test))
@@ -96,12 +97,18 @@ def make_idx_data_cv(revs, word_idx_map, max_l=51, k=300, filter_h=5):
 if __name__=="__main__":
 
     print "loading data..."
-    x = cPickle.load(open("mr.p","rb"))
+    x = cPickle.load(open("mr_prediction.p","rb"))
     revs, W, word_idx_map = x[0], x[1], x[2]
     U = W.astype(dtype="float32")
-    x_pred = cPickle.load(open("mr_prediction.p","rb"))
-    revs = x_pred[0]
-    datasets = make_idx_data_cv(revs, word_idx_map, max_l=56,k=20, filter_h=5)
+    sample_row = W[word_idx_map[((revs[0]['text']).split())[0]]]
+    k = len(sample_row)
+
+    max_filter = 5
+    filter_hs = [3,4,max_filter]
+    feature_maps_per_filter = 50
+    hidden_units = [feature_maps_per_filter,2]
+
+    datasets = make_idx_data_cv(revs, word_idx_map, k, max_filter, max_l=56)
     execfile("conv_net_classes.py")
 
     print "loading model..."
@@ -115,21 +122,19 @@ if __name__=="__main__":
     W_conv2_params = x[6].get_value()
     b_conv2_params = x[7].get_value()
 
-    img_w=20
+    img_w=k
     lr_decay=0.95
-    filter_hs=[2,3,4,5]
     conv_non_linear="relu"
-    hidden_units=[100,2] #903
     shuffle_batch=True
     sqr_norm_lim=9
     batch_size=50
     dropout_rate=[0.5]
     non_static=True
     activations=[Iden]
-    relaxation = 1
+    relaxation = 2
 
     y = T.ivector('y')
-    rng = np.random.RandomState(3435)
+    rng = np.random.RandomState(3455)
     img_h = len(datasets[0][0])-1
     filter_w = img_w
     feature_maps = hidden_units[0]
@@ -247,6 +252,17 @@ if __name__=="__main__":
 
     #formatting output
     print "formatting output..."
+    f_wagers = open('wagers.csv','w')
+    f_wagers.write('game_id,home_wins,odds,amount\n')
+    for game in prediction_list:
+        game_id = str(game['game_id'])
+        if int(game['predicted_category_1']) == 1:
+            outcome = 'W'
+        else:
+            outcome = 'L'
+        f_wagers.write(game_id + ',' + outcome + ',-110,1\n')
+    f_wagers.close()
+
     count_right_dict = {}
     for w in range(1,relaxation + 1):
         count_right_dict[w] = 0

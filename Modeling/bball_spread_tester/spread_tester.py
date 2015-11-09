@@ -81,6 +81,8 @@ if __name__ == "__main__":
         if (df1.loc[game_id, 'ATSr'] == row.loc['home_wins']):
             df2.loc[game_id, 'result'] = 1  # records if the bet won
             num_wins += 1
+        elif df1.loc[game_id, 'ATSr'] == 'P':
+            df2.loc[game_id, 'result'] = 0
         else:
             df2.loc[game_id, 'result'] = 0
     roi = calculate_roi(df2)*100
