@@ -25,11 +25,11 @@ player_id,player_name
 202779,dwight buycks
 2078,jason hart
 2079,kaniel dickens
-2081,ernest brown
+2736,luol deng
 203099,jared cunningham
 2737,rafael araujo
 200745,andrea bargnani
-42,monty williams
+200746,lamarcus aldridge
 43,chris whitney
 200748,tyrus thomas
 200749,shelden williams
@@ -170,7 +170,7 @@ player_id,player_name
 2260,jarron collins
 213,antonio davis
 203129,tornike shengelia
-200922,mike harris
+202970,gustavo ayon
 203471,dennis schroder
 221,clar. weatherspoon
 224,eddie jones
@@ -181,9 +181,8 @@ player_id,player_name
 2294,charlie bell
 248,george lynch
 203476,gorgui dieng
-2736,luol deng
+2431,david andersen
 252,karl malone
-200746,lamarcus aldridge
 202814,mychel thompson
 255,grant hill
 203136,ognjen kuzmic
@@ -236,14 +235,14 @@ player_id,player_name
 200760,rodney carney
 203090,maurice harkless
 339,tom gugliotta
-340,kevin pritchard
-203093,terrence jones
+203092,tyler zeller
+203101,miles plumlee
 203094,andrew nicholson
 200761,shawne williams
 344,dana barros
 203097,fab melo
 203098,john jenkins
-2447,tamar slay
+399,sean rooks
 348,mitchell butler
 2397,yao ming
 203102,arnett moultrie
@@ -293,7 +292,7 @@ player_id,player_name
 203148,brian roberts
 397,reggie miller
 2446,rasual butler
-399,sean rooks
+2447,tamar slay
 2449,luis scola
 2450,randy holcomb
 2452,j.r. bremer
@@ -301,6 +300,7 @@ player_id,player_name
 203159,scott machado
 2456,cezary trybanski
 2457,jannero pargo
+203119,kim english
 203162,ben hansbrough
 2466,maurice carter
 203197,diante garrett
@@ -311,7 +311,6 @@ player_id,player_name
 101106,andrew bogut
 203183,tony mitchell
 200776,mardy collins
-203186,willie reed
 203187,chris johnson
 436,juwan howard
 201141,greg oden
@@ -354,7 +353,6 @@ player_id,player_name
 201180,sun yue
 101114,deron williams
 201182,derrick byars
-201183,adam haluska
 201186,stephane lasme
 101115,andrew bynum
 201188,marc gasol
@@ -362,7 +360,6 @@ player_id,player_name
 200785,kosta perovic
 201192,taurean green
 201193,demetris nichols
-202148,mickell gladness
 201196,ramon sessions
 201199,dj strawberry
 2544,lebron james
@@ -440,7 +437,6 @@ player_id,player_name
 202356,armon johnson
 201145,jeff green
 2648,ronald dupree
-201166,aaron brooks
 200788,james augustine
 2657,yuta tabuse
 2667,desmond penigar
@@ -477,7 +473,6 @@ player_id,player_name
 2724,desmond ferguson
 677,eric williams
 203109,jae crowder
-680,john amaechi
 203548,elias harris
 682,bob sura
 2731,emeka okafor
@@ -521,7 +516,7 @@ player_id,player_name
 203473,dewayne dedmon
 722,corliss williamson
 2772,trevor ariza
-2773,tim pickett
+201166,aaron brooks
 2774,bernard robinson
 727,eric snow
 2776,pape sow
@@ -674,7 +669,7 @@ player_id,player_name
 101249,john lucas iii
 201602,kyle weaver
 201603,sonny weems
-101252,sean banks
+201604,chris douglas-roberts
 201605,nathan jawai
 902,bimbo coles
 201607,patrick ewing jr.
@@ -739,13 +734,12 @@ player_id,player_name
 998,mark pope
 1000,shandon anderson
 203460,andre roberson
-168,chris mills
+203120,justin hamilton
 203461,anthony bennett
 101204,dwayne jones
 203263,james nunnally
 1032,darvin ham
-203092,tyler zeller
-201204,brandon wallace
+203121,darius miller
 1043,amal mccaskill
 1049,shane heal
 1052,ben handlogten
@@ -763,7 +757,7 @@ player_id,player_name
 203106,jeff taylor
 201228,cj watson
 201802,oliver lafayette
-203101,miles plumlee
+203552,seth curry
 201805,chris hunter
 201229,anthony tolliver
 201571,d.j. augustin
@@ -773,7 +767,6 @@ player_id,player_name
 203124,kyle o'quinn
 201575,brandon rush
 201577,robin lopez
-203120,justin hamilton
 2766,antonio burks
 201858,cartier martin
 201579,roy hibbert
@@ -846,18 +839,12 @@ player_id,player_name
 201988,patty mills
 201601,luc mbah a moute
 203114,khris middleton
-203121,darius miller
-201604,chris douglas-roberts
-202970,gustavo ayon
 201606,sean singletary
-2431,david andersen
 203199,dequan jones
 201609,goran dragic
 203268,jorge gutierrez
 202066,garrett temple
-202067,diamon simpson
 202068,marcus landry
-202077,jerel mcneal
 202079,antonio anderson
 202081,garret siler
 202082,larry owens
@@ -867,14 +854,13 @@ player_id,player_name
 202091,dionte christmas
 203133,robbie hummel
 203474,dj stephens
-203552,seth curry
 203543,vitor faverani
 1425,aaron williams
 202130,reggie williams
 202132,cedric jackson
 1442,zeljko rebraca
 201627,anthony morrow
-1444,lawrence funderburke
+202148,mickell gladness
 203122,kevin murphy
 201628,bobby brown
 203203,chris wright
@@ -918,7 +904,6 @@ player_id,player_name
 1531,marc jackson
 203469,cody zeller
 1533,anthony johnson
-202238,kenny hasbrouck
 1536,stephen jackson
 1541,alvin williams
 1542,predrag drobnjak
@@ -1000,7 +985,6 @@ player_id,player_name
 202389,timofey mozgov
 202390,gary neal
 202391,jeremy lin
-202392,marqus blakely
 201165,morris almond
 202395,sherron collins
 202396,samardo samuels
@@ -1062,7 +1046,6 @@ player_id,player_name
 1802,brad miller
 203479,jamaal franklin
 202738,isaiah thomas
-665382,dexter pittman
 202536,jerry smith
 202716,jordan williams
 2857,andre barrett
@@ -1072,6 +1055,7 @@ player_id,player_name
 203115,will barton
 201979,nick calathes
 1853,anthony carter
+203093,terrence jones
 2740,andris biedrins
 1863,earl boykins
 201171,carl landry
@@ -1112,7 +1096,6 @@ player_id,player_name
 1924,lee nailon
 201173,marcus williams
 1934,rodney buford
-201787,cartier martin
 1938,manu ginobili
 200793,dee brown
 202734,e'twaun moore
@@ -1123,7 +1106,6 @@ player_id,player_name
 203480,james southerland
 1956,ira newble
 1960,milt palacio
-203119,kim english
 200765,rajon rondo
 202681,kyrie irving
 202682,derrick williams

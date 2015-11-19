@@ -287,7 +287,7 @@ def get_idx_from_sent(sent, word_idx_map, k, filter_h, max_l=51):
         x.append(0)
     return x
 
-def make_idx_data_cv(revs, word_idx_map, cv, k, filter_h, max_l=51):
+def make_idx_data_cv(W, revs, word_idx_map, cv, k, filter_h, max_l=51):
     """
     Transforms sentences into a 2-d matrix.
     """
@@ -328,7 +328,7 @@ if __name__=="__main__":
     results = []
     r = range(0,1) # r = range(0,10)
     for i in r:
-        datasets = make_idx_data_cv(revs, word_idx_map, i, k, max_filter, max_l=56)
+        datasets = make_idx_data_cv(W, revs, word_idx_map, i, k, max_filter, max_l=56)
         perf = train_conv_net(datasets,
                               U,
                               k,
