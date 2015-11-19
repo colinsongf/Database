@@ -14,8 +14,8 @@ import json # parse json
 import sys # take input arguments from command line
 
 # Where is the data to be read/saved?
-DATAPATH = 'C:/Users/Ke/Dropbox/Public/NBA_data/2015'
-DATAPATH2 = 'C:/Users/Ke/Dropbox/Public/NBA_data/2015'
+DATAPATH = '/media/sf_Public/NBA_data'
+DATAPATH2 = 'C:/Users/Ke/Dropbox/Public/NBA_data'
 #DATAPATH = '/home/gmf/Code/git/nba'
 
 # URLs & parameter sets for requests
