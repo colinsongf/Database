@@ -337,7 +337,7 @@ if __name__=="__main__":
                               lr_decay=0.95,
                               conv_non_linear="relu",
                               shuffle_batch=True,
-                              n_epochs=10,
+                              n_epochs=5,
                               sqr_norm_lim=9,
                               non_static=non_static,
                               batch_size=50,

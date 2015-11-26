@@ -48,8 +48,8 @@ def write_gamelist_by_date(seasonid,startday,stopday):
 
 def main():
   seasonid = '00215'
-  startday = datetime.date(2015,10,27)
-  stopday = datetime.date(2015,11,18)
+  startday = datetime.date(2015,11,24)
+  stopday = datetime.date(2015,11,24)
   write_gamelist_by_date(seasonid, startday, stopday)
 
 if __name__ == '__main__': 

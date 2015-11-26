@@ -73,6 +73,24 @@ fgb_suffix = '_FGB'
 ###  FUNCTIONS FOR CREATING GAME IMAGES  ###
 ############################################
 
+# Determining If Valid Arguments
+def arguments_validation(arguments):
+
+	# Specifying Running Mode
+	if len(arguments) != 3:
+		print "\nthis script needs the arguments {'model' or 'predict'} and {'cnn' or 'trees'} \n"
+		sys.exit()
+	else:
+		if (arguments[1] not in ['model','predict']) and (arguments[2] not in ['cnn','trees']):
+			print "\nthis script needs the arguments {'model' or 'predict'} and {'cnn' or 'trees'} \n"
+			sys.exit()
+		else:
+			running_mode = arguments[1]
+			model_mode = arguments[2]
+	return running_mode, model_mode
+
+
+
 # template initialized for player special stats
 def initial_special_stats():
 
@@ -105,7 +123,7 @@ def pull_line_data():
 	# iterating over all games to pull line data
 	print '\npulling line data'
 	line_counter = -1; line_header = []; line_data = {}
-	f = open('/Users/terryjames/Dropbox/Public/NBA_data/NBA_OU_data (since 2000).csv','r')
+	f = open('/Users/terryjames/Dropbox/Public/NBA_data/NBA OU data (since 2000).csv','r')
 	for line in f:
 		rows = line.split('\r')
 		for row in rows:
@@ -181,9 +199,12 @@ def determine_teams(game_summary_header,game_summary):
 def determine_cover(line_data,game_id):
 
 	# calculating game outcome where y = 1 means home team covers
-	line_value = float(line_data[game_id]['Line'])
-	y = 1 if line_data[game_id]['ATSr'] == 'W' else 0
-	return y, line_value
+	if (line_data[game_id]['Line'] != '') and (line_data[game_id]['ATSr'] != ''):
+		line_value = float(line_data[game_id]['Line'])
+		y = 1 if line_data[game_id]['ATSr'] == 'W' else 0
+		return y, line_value
+	else:
+		return '', line_data[game_id]['Line']
 
 
 
@@ -698,10 +719,10 @@ def current_game_team_stats(player,player_dict,player_stats_header,team_dict,tea
 
 
 # outputting player translation file
-def saving_all_players(player_translations,running_mode_str):
+def saving_all_players(player_translations):
 
 	# players saved are only from games covered by current script run
-	f_plyr = open(running_mode_str.replace('_','') + 'process_data_running_stats_players.txt','w')
+	f_plyr = open('process_data_running_stats_players.txt','w')
 	f_plyr.write('player_id,player_name\n')
 	for plyr in player_translations:
 		f_plyr.write(str(plyr) + ',' + player_translations[plyr] + '\n')
@@ -748,7 +769,7 @@ def games_pretty_output():
 				else:
 					cur_key = str('away_' + revs_header[q - head_len])
 				full_output['games'][game_id]['image'][str(j)]['keyed_data'][cur_key] = list_val[q]
-	f_out = open(running_mode_str.replace('_','') + 'process_data_running_stats_checking.txt','w')
+	f_out = open('process_data_running_stats_checking.txt','w')
 	f_out.write(str(full_output))
 	f_out.close()
 	print "checked file created!"
@@ -760,10 +781,10 @@ def games_pretty_output():
 ##########################################
 
 # main function for create cnn data images
-def build_data(running_mode,running_mode_str):
+def build_data(running_mode):
 
 	# inital variable params
-	min_year = 3; max_year = 13; history_window = 5
+	min_year = 15; max_year = 15; history_window = 5
 
 	# data structures for output cnn images
 	revs = []; revs_header = []
@@ -801,6 +822,8 @@ def build_data(running_mode,running_mode_str):
 
 			# determining winner with respect to line
 			y, line_value = determine_cover(line_data,game_id)
+			if (y == '') or (line_value == ''):
+				continue
 
 			# determining rest stat for each team
 			home_rest, away_rest = determine_rest(game_dict['line_score_header'],game_dict['line_score'],game_id,home_team,away_team,line_data)
@@ -867,7 +890,8 @@ def build_data(running_mode,running_mode_str):
 				team_counter = team_counter + 1
 
 	# outputting player translation file
-	saving_all_players(player_translations,running_mode_str)
+	if running_mode == 'model':
+		saving_all_players(player_translations)
 
 	# final output for model input
 	W3 = formatting_final_cnn_structure(file_counter,revs,player_game_idx2,k2,W2)
@@ -884,27 +908,12 @@ def build_data(running_mode,running_mode_str):
 if __name__=="__main__":
 
 	# specifying running mode
-	if len(sys.argv) != 2:
-		print "\nthis script needs a running mode of either 'model' or 'predict' \n"
-		sys.exit()
-	else:
-		if sys.argv[1] not in ['model','predict']:
-			print "\nthis script needs a running mode of either 'model' or 'predict' \n"
-			sys.exit()
-		else:
-			running_mode = sys.argv[1]
-			running_mode_str = '' if running_mode == 'model' else '_prediction'
+	running_mode, model_mode = arguments_validation(sys.argv)
 
 	# building cnn data images
-	revs, W, word_idx_map, revs_header = build_data(running_mode,running_mode_str)
-	cPickle.dump([revs, W, word_idx_map], open("mr" + running_mode_str + ".p", "wb"))
+	revs, W, word_idx_map, revs_header = build_data(running_mode)
+	cPickle.dump([revs, W, word_idx_map, revs_header], open(model_mode + "_" + running_mode + "_data.p", "wb"))
 	print "dataset created!"
 
 	# outputting full formatted file for visual checking (currently not finished because i was lazy ...)
 	# games_pretty_output()
-
-	# NOTES FOR SORTING
-	'''
-	home_player_list = [x for (q,x) in sorted(zip(home_player_sort_list,home_player_list), reverse=True)]
-	away_player_list = [x for (q,x) in sorted(zip(away_player_sort_list,away_player_list), reverse=True)]
-	'''
