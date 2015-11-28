@@ -226,7 +226,7 @@ def determine_rest(line_score_header,line_score,game_id,home_team,away_team,line
 
 
 # recording player historical averages and determining current player teams
-def record_player_history(player_stats,player_stats_header,player_histories,history_steps,home_team,away_team):
+def record_player_history(player_stats,player_stats_header,player_histories,history_steps,home_team,away_team,running_mode):
 
 	# iterating over all players
 	history_met = 1; home_players = []; away_players = []; player_teams = {}
@@ -248,15 +248,25 @@ def record_player_history(player_stats,player_stats_header,player_histories,hist
 		for b in range(history_steps-1,0,-1):
 			player_histories[player_key][str(b)] = copy.deepcopy(player_histories[player_key][str(b-1)])
 		player_histories[player_key]['0'] = {}
-		if player_histories[player_key][str(history_steps-1)] == {}:
+		required_steps = '1' if running_mode == 'predict' else str(history_steps-1)
+		if player_histories[player_key][required_steps] == {}:
 			history_met = 0
 		else:
 			for key in player_histories[player_key]['1']:
 				if key not in ['TEAM_ID','TEAM']:
-					cur_sum = 0.0
+
+					# iterating over each history step
+					cur_sum = 0.0; cur_counter = 0.0
 					for b in range(1,history_steps):
-						cur_sum = cur_sum + player_histories[player_key][str(b)][key]
-					cur_avg = cur_sum / float(history_steps - 1)
+
+						# if predict mode, non-full history is acceptable
+						if running_mode == 'predict':
+							if key in player_histories[player_key][str(b)]:
+								cur_sum = cur_sum + player_histories[player_key][str(b)][key]
+								cur_counter = cur_counter + 1.0
+						else:
+							cur_sum = cur_sum + player_histories[player_key][str(b)][key]
+					cur_avg = (cur_sum / cur_counter) if running_mode == 'predict' else (cur_sum / float(history_steps - 1))
 					player_histories[player_key]['sum'][key] = cur_sum; player_histories[player_key]['avg'][key] = cur_avg
 
 		# determining current player teams
@@ -722,7 +732,7 @@ def current_game_team_stats(player,player_dict,player_stats_header,team_dict,tea
 def saving_all_players(player_translations):
 
 	# players saved are only from games covered by current script run
-	f_plyr = open('process_data_running_stats_players.txt','w')
+	f_plyr = open('sample_players_data.txt','w')
 	f_plyr.write('player_id,player_name\n')
 	for plyr in player_translations:
 		f_plyr.write(str(plyr) + ',' + player_translations[plyr] + '\n')
@@ -742,20 +752,24 @@ def formatting_final_cnn_structure(file_counter,revs,player_game_idx2,k2,W2):
 
 
 
-# outputting full formatted file for visual checking (currently not finished because i was lazy ...)
-def games_pretty_output():
+# outputting easy to read json file for n sample games
+def games_pretty_output(revs, W, word_idx_map, revs_header, n):
 
-	# outputting game data images in easy to read json file
+	# iterating over sample games
 	full_output = {}
 	full_output['games'] = {}
 	full_output['header'] = ', '.join(map(str,revs_header))
 	head_len = len(revs_header)
-	print "outputting checking data file ... "
-	for rev in revs:
+	for i in range(0,n):
+
+		# allocating space to store game data
+		rev = revs[i]
 		game_id = str(int(rev['game_id']))
 		full_output['games'][game_id] = {}
 		full_output['games'][game_id]['y'] = str(int(rev['y']))
 		full_output['games'][game_id]['image'] = {}
+
+		# storing data for each player listed in rev text
 		map_key = rev['text'].split(' ')
 		for j in range(0,len(map_key)):
 			list_val = list(W[word_idx_map[map_key[j]]])
@@ -763,13 +777,14 @@ def games_pretty_output():
 			full_output['games'][game_id]['image'][str(j)]['data'] = ', '.join(map(str,list_val))
 			full_output['games'][game_id]['image'][str(j)]['player_game_player_game'] = map_key[j]
 			full_output['games'][game_id]['image'][str(j)]['keyed_data'] = {}
+
+			# expliciting associating data with a key for easy reading
 			for q in range(0,len(list_val)):
-				if q < head_len:
-					cur_key = str('home_' + revs_header[q])
-				else:
-					cur_key = str('away_' + revs_header[q - head_len])
+				cur_key = str('home_' + revs_header[q]) if (q < head_len) else str('away_' + revs_header[q - head_len])
 				full_output['games'][game_id]['image'][str(j)]['keyed_data'][cur_key] = list_val[q]
-	f_out = open('process_data_running_stats_checking.txt','w')
+
+	# outputing file
+	f_out = open('sample_games_data.txt','w')
 	f_out.write(str(full_output))
 	f_out.close()
 	print "checked file created!"
@@ -781,10 +796,7 @@ def games_pretty_output():
 ##########################################
 
 # main function for create cnn data images
-def build_data(running_mode):
-
-	# inital variable params
-	min_year = 15; max_year = 15; history_window = 5
+def build_data(running_mode,min_year,max_year,history_window):
 
 	# data structures for output cnn images
 	revs = []; revs_header = []
@@ -829,7 +841,7 @@ def build_data(running_mode):
 			home_rest, away_rest = determine_rest(game_dict['line_score_header'],game_dict['line_score'],game_id,home_team,away_team,line_data)
 
 			# recoring player historical averages and determining current player teams
-			player_histories, history_met, home_players, away_players, player_teams = record_player_history(game_dict['player_stats'],game_dict['player_stats_header'],player_histories,history_steps,home_team,away_team)
+			player_histories, history_met, home_players, away_players, player_teams = record_player_history(game_dict['player_stats'],game_dict['player_stats_header'],player_histories,history_steps,home_team,away_team,running_mode)
 
 			# recording team and opponent historical averages
 			team_histories, team_history_met = record_team_history(team_histories,home_team,away_team,history_steps)
@@ -907,13 +919,16 @@ def build_data(running_mode):
 
 if __name__=="__main__":
 
+	# inital variable params
+	min_year = 14; max_year = 14; history_window = 5
+
 	# specifying running mode
 	running_mode, model_mode = arguments_validation(sys.argv)
 
 	# building cnn data images
-	revs, W, word_idx_map, revs_header = build_data(running_mode)
+	revs, W, word_idx_map, revs_header = build_data(running_mode,min_year,max_year,history_window)
 	cPickle.dump([revs, W, word_idx_map, revs_header], open(model_mode + "_" + running_mode + "_data.p", "wb"))
 	print "dataset created!"
 
-	# outputting full formatted file for visual checking (currently not finished because i was lazy ...)
-	# games_pretty_output()
+	# outputting easy to read json file for n sample games
+	games_pretty_output(revs, W, word_idx_map, revs_header, 5)
