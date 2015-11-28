@@ -37,3 +37,15 @@
 2015-11-28 03:41:06: data loaded!
 2015-11-28 03:41:10: Number of urls to train: 0
 2015-11-28 03:41:10: Number of urls to test: 1054
+2015-11-28 05:11:23: loading data...
+2015-11-28 05:13:34: data loaded!
+2015-11-28 05:14:12: Number of urls to train: 8328
+2015-11-28 05:14:12: Number of urls to test: 944
+2015-11-28 20:51:49: loading data...
+2015-11-28 20:54:00: data loaded!
+2015-11-28 20:54:43: Number of urls to train: 8563
+2015-11-28 20:54:43: Number of urls to test: 921
+2015-11-28 21:06:04: loading data...
+2015-11-28 21:06:18: data loaded!
+2015-11-28 21:06:21: Number of urls to train: 0
+2015-11-28 21:06:21: Number of urls to test: 1054
