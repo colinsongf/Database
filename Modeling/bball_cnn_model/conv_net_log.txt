@@ -17,3 +17,23 @@
 2015-11-25 18:43:16: data loaded!
 2015-11-25 18:43:16: Number of urls to train: 0
 2015-11-25 18:43:16: Number of urls to test: 3
+2015-11-28 01:25:04: loading data...
+2015-11-28 01:27:08: data loaded!
+2015-11-28 01:27:47: Number of urls to train: 8580
+2015-11-28 01:27:47: Number of urls to test: 904
+2015-11-28 01:41:09: loading data...
+2015-11-28 01:41:19: data loaded!
+2015-11-28 01:41:21: Number of urls to train: 0
+2015-11-28 01:41:21: Number of urls to test: 700
+2015-11-28 02:28:08: loading data...
+2015-11-28 02:30:15: data loaded!
+2015-11-28 02:30:54: Number of urls to train: 8511
+2015-11-28 02:30:54: Number of urls to test: 973
+2015-11-28 02:38:41: loading data...
+2015-11-28 02:38:51: data loaded!
+2015-11-28 02:38:53: Number of urls to train: 0
+2015-11-28 02:38:53: Number of urls to test: 700
+2015-11-28 03:40:52: loading data...
+2015-11-28 03:41:06: data loaded!
+2015-11-28 03:41:10: Number of urls to train: 0
+2015-11-28 03:41:10: Number of urls to test: 1054
