@@ -77,17 +77,18 @@ fgb_suffix = '_FGB'
 def arguments_validation(arguments):
 
 	# Specifying Running Mode
-	if len(arguments) != 3:
-		print "\nthis script needs the arguments {'model' or 'predict'} and {'cnn' or 'trees'} \n"
+	if len(arguments) != 4:
+		print "\nthis script needs the arguments {'model' or 'predict'} and {'cnn' or 'trees'} and {'line' or 'ou'} \n"
 		sys.exit()
 	else:
 		if (arguments[1] not in ['model','predict']) and (arguments[2] not in ['cnn','trees']):
-			print "\nthis script needs the arguments {'model' or 'predict'} and {'cnn' or 'trees'} \n"
+			print "\nthis script needs the arguments {'model' or 'predict'} and {'cnn' or 'trees'} and {'line' or 'ou'} \n"
 			sys.exit()
 		else:
 			running_mode = arguments[1]
 			model_mode = arguments[2]
-	return running_mode, model_mode
+			outcome_mode = arguments[3]
+	return running_mode, model_mode, outcome_mode
 
 
 
@@ -135,7 +136,7 @@ def pull_line_data():
 				for entry in entries:
 					line_header.append(entry)
 				game_id_index = line_header.index('game_id')
-				line_stats = {'Line':-100,'ATSr':-100,'Rest':-100}
+				line_stats = {'Line':-100,'ATSr':-100,'OUr':-100,'Rest':-100}
 				for key in line_stats:
 					line_stats[key] = line_header.index(key)
 
@@ -196,13 +197,21 @@ def determine_teams(game_summary_header,game_summary):
 
 
 # determining whether the home team covered for each game (binary categorization)
-def determine_cover(line_data,game_id):
+def determine_cover(line_data,game_id,outcome_mode):
 
-	# calculating game outcome where y = 1 means home team covers
+	# calculating game outcome where y = 1 means home team covers or y = 1 means Over
 	if (line_data[game_id]['Line'] != '') and (line_data[game_id]['ATSr'] != ''):
 		line_value = float(line_data[game_id]['Line'])
-		y = 1 if line_data[game_id]['ATSr'] == 'W' else 0
-		return y, line_value
+		if outcome_mode == 'line':
+			y = 1 if line_data[game_id]['ATSr'] == 'W' else 0
+			return y, line_value
+		if outcome_mode == 'ou':
+			ou_value = line_data[game_id]['OUr']
+			if ou_value in ['O','U']:
+				y = 1 if ou_value == 'O' else 0
+				return y, line_value
+			else:
+				return '', line_value
 	else:
 		return '', line_data[game_id]['Line']
 
@@ -438,11 +447,11 @@ def calculate_advanced_stats(plyr_avg,plyr_sum,team_histories,team,league_stats,
 	plyr_avg['ORBr'] = (plyr_sum['OREB']*(TM_MP/5))/(plyr_sum['MIN']*(TM_ORB+OP_ORB))
 
 	# adv stat: defensive rebounding rate
-	plyr_avg['DRBr'] = (plyr_sum['DREB']*(TM_MP/5))/(plyr_sum['MIN']*(TM_DRB+OP_ORB))
+	plyr_avg['DRBr'] = (plyr_sum['DREB']*(TM_MP/5))/(plyr_sum['MIN']*(TM_DRB+OP_DRB))
 
 	# adv stat: total rebounding rate
 	TRB = plyr_sum['OREB'] + plyr_sum['DREB']
-	plyr_avg['TRBr'] = (TRB*(TM_MP/5))/(plyr_sum['MIN']*(TM_TRB+OP_ORB))
+	plyr_avg['TRBr'] = (TRB*(TM_MP/5))/(plyr_sum['MIN']*(TM_TRB+OP_TRB))
 
 	# adv stat: assist rate
 	plyr_avg['ASTr'] = plyr_sum['AST']/(((plyr_sum['MIN']/(TM_MP/5))*TM_FGM)-plyr_sum['FGM'])
@@ -796,7 +805,7 @@ def games_pretty_output(revs, W, word_idx_map, revs_header, n):
 ##########################################
 
 # main function for create cnn data images
-def build_data(running_mode,min_year,max_year,history_window):
+def build_data(running_mode,outcome_mode,min_year,max_year,history_window):
 
 	# data structures for output cnn images
 	revs = []; revs_header = []
@@ -832,8 +841,8 @@ def build_data(running_mode,min_year,max_year,history_window):
 			if game_id not in line_data:
 				continue
 
-			# determining winner with respect to line
-			y, line_value = determine_cover(line_data,game_id)
+			# determining winner with respect to line or with respect to o/u
+			y, line_value = determine_cover(line_data,game_id,outcome_mode)
 			if (y == '') or (line_value == ''):
 				continue
 
@@ -923,11 +932,11 @@ if __name__=="__main__":
 	min_year = 14; max_year = 14; history_window = 5
 
 	# specifying running mode
-	running_mode, model_mode = arguments_validation(sys.argv)
+	running_mode, model_mode, outcome_mode = arguments_validation(sys.argv)
 
 	# building cnn data images
-	revs, W, word_idx_map, revs_header = build_data(running_mode,min_year,max_year,history_window)
-	cPickle.dump([revs, W, word_idx_map, revs_header], open(model_mode + "_" + running_mode + "_data.p", "wb"))
+	revs, W, word_idx_map, revs_header = build_data(running_mode,outcome_mode,min_year,max_year,history_window)
+	cPickle.dump([revs, W, word_idx_map, revs_header], open(model_mode + "_" + running_mode + "_" + outcome_mode + "_data.p", "wb"))
 	print "dataset created!"
 
 	# outputting easy to read json file for n sample games
