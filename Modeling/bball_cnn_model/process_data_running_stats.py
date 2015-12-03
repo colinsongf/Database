@@ -77,18 +77,19 @@ fgb_suffix = '_FGB'
 def arguments_validation(arguments):
 
 	# Specifying Running Mode
-	if len(arguments) != 4:
-		print "\nthis script needs the arguments {'model' or 'predict'} and {'cnn' or 'trees'} and {'line' or 'ou'} \n"
+	if len(arguments) != 5:
+		print "\nthis script needs the arguments {'model' or 'predict'} and {'cnn' or 'trees'} and {'line' or 'ou'} and {'past' or 'present'} \n"
 		sys.exit()
 	else:
-		if (arguments[1] not in ['model','predict']) and (arguments[2] not in ['cnn','trees']):
-			print "\nthis script needs the arguments {'model' or 'predict'} and {'cnn' or 'trees'} and {'line' or 'ou'} \n"
+		if (arguments[1] not in ['model','predict']) and (arguments[2] not in ['cnn','trees']) and (arguments[3] not in ['line','ou']) and (arguments[4] not in ['past','present']):
+			print "\nthis script needs the arguments {'model' or 'predict'} and {'cnn' or 'trees'} and {'line' or 'ou'} and {'past' or 'present'} \n"
 			sys.exit()
 		else:
 			running_mode = arguments[1]
 			model_mode = arguments[2]
 			outcome_mode = arguments[3]
-	return running_mode, model_mode, outcome_mode
+			timeframe_mode = arguments[4]
+	return running_mode, model_mode, outcome_mode, timeframe_mode
 
 
 
@@ -126,29 +127,91 @@ def pull_line_data():
 	line_counter = -1; line_header = []; line_data = {}
 	f = open('/Users/terryjames/Dropbox/Public/NBA_data/NBA OU data (since 2000).csv','r')
 	for line in f:
-		rows = line.split('\r')
-		for row in rows:
+		row = line.replace('\n','').replace('\r','')
 
-			# storing header order on 0th row
-			line_counter = line_counter + 1
-			entries = row.split(',')
-			if line_counter == 0:
-				for entry in entries:
-					line_header.append(entry)
-				game_id_index = line_header.index('game_id')
-				line_stats = {'Line':-100,'ATSr':-100,'OUr':-100,'Rest':-100}
-				for key in line_stats:
-					line_stats[key] = line_header.index(key)
+		# storing header order on 0th row
+		line_counter = line_counter + 1
+		entries = row.split(',')
+		if line_counter == 0:
+			for entry in entries:
+				line_header.append(entry)
+			game_id_index = line_header.index('game_id')
+			line_stats = {'Line':-100,'ATSr':-100,'OUr':-100,'Rest':-100}
+			for key in line_stats:
+				line_stats[key] = line_header.index(key)
 
-			# storing line data on all other rows
-			else:
-				game_id = entries[game_id_index]
-				line_data[game_id] = {}
-				for key in line_stats:
-					line_data[game_id][key] = entries[line_stats[key]]
+		# storing line data on all other rows
+		else:
+			game_id = entries[game_id_index]
+			line_data[game_id] = {}
+			for key in line_stats:
+				line_data[game_id][key] = entries[line_stats[key]]
 
 	# closing file and returning all line data
 	f.close(); return line_data
+
+
+
+# if present timeframe mode, pulling game data for present games
+def pulling_present_games(player_histories):
+
+	# iterating over all present games in gamelist file
+	f_present = open('/Users/terryjames/Dropbox/Public/NBA_data/gamelist.csv')
+	present_games = {}; present_counter = 0
+	for line in f_present:
+		row = (line.replace('\n','').replace('\r','')).split(',')
+
+		# storing header on first pass
+		if present_counter == 0:
+			present_header = row
+
+		# storing game data on additional passes
+		else:
+			present_games[present_counter] = {}
+			for key in present_header:
+				present_games[present_counter][key] = row[present_header.index(key)]
+
+		# adjusting counter
+		present_counter = present_counter + 1
+
+	# iterating over all games in rosterlist
+	f_roster = open('/Users/terryjames/Dropbox/Public/NBA_data/rosterlist_all.csv')
+	roster_counter = 0
+	for line in f_roster:
+		row = (line.replace('\n','').replace('\r','')).split(',')
+
+		# storing header on first pass
+		if roster_counter == 0:
+			present_header = row
+
+		# storing game data on additional passes
+		else:
+			game_id = row[present_header.index('gameid')]
+			for game in present_games:
+				if present_games[game]['gameid_num'] == game_id:
+					home_player_list = []; away_player_list = []
+
+					# iterating over all potential players and storing home & away player rosters
+					for j in range(1,16):
+						home_player = str(row[present_header.index('home_player' + str(j))])
+						away_player = str(row[present_header.index('away_player' + str(j))])
+						if (home_player != '') and (int(home_player) in player_histories):
+							if 'sum' in player_histories[int(home_player)]:
+								if 'game_counter' in player_histories[int(home_player)]['sum']:
+									home_player_list.append(home_player + '_' + str(game_id))
+						if (away_player != '') and (int(away_player) in player_histories):
+							if 'sum' in player_histories[int(away_player)]:
+								if 'game_counter' in player_histories[int(away_player)]['sum']:
+									away_player_list.append(away_player + '_' + str(game_id))
+					present_games[game]['home_players'] = home_player_list
+					present_games[game]['away_players'] = away_player_list
+
+		# adjusting counter
+		roster_counter = roster_counter + 1
+
+	# returning present game data
+	present_counter = present_counter - 1
+	return present_games, present_counter
 
 
 
@@ -218,18 +281,14 @@ def determine_cover(line_data,game_id,outcome_mode):
 
 
 # determining the rest stat for each team
-def determine_rest(line_score_header,line_score,game_id,home_team,away_team,line_data):
+def determine_rest(line_data,game_id):
 
 	# retrieving rest in terms of consecutive games played for both teams
-	team_index = line_score_header.index('TEAM_ID')
-	for team in line_score:
-		rest_list = (line_data[game_id]['Rest']).split('&')
-		if team[team_index] == home_team:
-			home_rest = rest_list[0]
-			home_rest = 0.0 if home_rest == '' else float(home_rest)
-		if team[team_index] == away_team:
-			away_rest = rest_list[1]
-			away_rest = 0.0 if away_rest == '' else float(away_rest)
+	rest_list = (line_data[game_id]['Rest']).split('&')
+	home_rest = rest_list[0]
+	home_rest = 0.0 if home_rest == '' else float(home_rest)
+	away_rest = rest_list[1]
+	away_rest = 0.0 if away_rest == '' else float(away_rest)
 	return home_rest, away_rest
 
 
@@ -277,6 +336,9 @@ def record_player_history(player_stats,player_stats_header,player_histories,hist
 							cur_sum = cur_sum + player_histories[player_key][str(b)][key]
 					cur_avg = (cur_sum / cur_counter) if running_mode == 'predict' else (cur_sum / float(history_steps - 1))
 					player_histories[player_key]['sum'][key] = cur_sum; player_histories[player_key]['avg'][key] = cur_avg
+
+			# track number of games played for predict mode
+			player_histories[player_key]['sum']['game_counter'] = cur_counter
 
 		# determining current player teams
 		player_teams[player_key] = player[player_stats_header.index('TEAM_ID')]
@@ -397,7 +459,13 @@ def calculate_league_stats(team_histories,home_team,history_steps):
 
 
 # calculating advanced stats for a player
-def calculate_advanced_stats(plyr_avg,plyr_sum,team_histories,team,league_stats,history_window):
+def calculate_advanced_stats(plyr_avg,plyr_sum,team_histories,team,league_stats,history_window,running_mode):
+
+	# adjusting player sum stats for players with incomplete histories
+	if running_mode == 'predict':
+		game_counter = plyr_sum['game_counter']
+		for key in plyr_sum:
+			plyr_sum[key] = plyr_sum[key] * float(history_window / game_counter)
 
 	# storing team and opponent stats temporarily for advanced stats calculations
 	TM_MP = team_histories[team]['sum']['MIN']; OP_MP = team_histories[team]['oppo_' + 'sum']['MIN']
@@ -561,7 +629,7 @@ def forming_cnn_player_row(W,W2,word_idx_map,player_game_idx,plyr_avg,revs_heade
 
 
 # formatting and storing game cnn image
-def storing_cnn_image(y,game_id,home_players,away_players,W,W2,word_idx_map,word_idx_map2,player_game_idx2,revs):
+def storing_cnn_image(y,game_id,line_value,home_team,away_team,team_translations,home_players,away_players,W,W2,word_idx_map,word_idx_map2,player_game_idx2,revs):
 
 	# adding padding to make player lists the same length
 	padding = 15; padding_2 = 5
@@ -585,8 +653,11 @@ def storing_cnn_image(y,game_id,home_players,away_players,W,W2,word_idx_map,word
 	# forming final game image
 	text = ' '.join(text_list)
 	datum  = {"y": y,
+			  "line": line_value,
 			  "text": text,
 			  "game_id": game_id,
+			  "home_team": team_translations[str(home_team)],
+			  "away_team": team_translations[str(away_team)],
 			  "split": np.random.randint(0,10)}
 	revs.append(datum)
 
@@ -684,13 +755,15 @@ def pull_shots_data(game_id,plry_shot_time_init):
 
 
 # loading current game stats for current player
-def pull_player_stats(player,plyr_act_init,player_stats_header,plyr_shots_time,plyr_shots,plyr_shots_loc,player_translations):
+def pull_player_stats(player,plyr_act_init,player_stats_header,plyr_shots_time,plyr_shots,plyr_shots_loc,player_translations,team_translations):
 
 	# initialize player specific data structures
 	player_dict = {}; player_dict = copy.deepcopy(plyr_act_init)
 	player_key = player[player_stats_header.index('PLAYER_ID')]
 	player_team = player[player_stats_header.index('TEAM_ID')]
+	player_team_abbrev = player[player_stats_header.index('TEAM_ABBREVIATION')]
 	player_translations[player_key] = player[player_stats_header.index('PLAYER_NAME')].lower()
+	team_translations[str(player_team)] = player_team_abbrev
 
 	# iterating through and pulling basic stats for the current player
 	for i in range(0,len(player)):
@@ -720,7 +793,7 @@ def pull_player_stats(player,plyr_act_init,player_stats_header,plyr_shots_time,p
 				player_dict['avg_dist_' + timeframe] = plyr_shots_loc[player_key]['avg_dist_' + timeframe] / plyr_shots_loc[player_key]['avg_dist_' + timeframe + '_c']
 
 	# return current game player stats
-	return player_dict, player_translations, player_team, player_key
+	return player_dict, player_translations, player_team, player_key, team_translations
 
 
 
@@ -758,6 +831,28 @@ def formatting_final_cnn_structure(file_counter,revs,player_game_idx2,k2,W2):
 	for z in range(0,len(W2)):
 		W3[z] = W2[z]
 	return W3
+
+
+
+# load data on teams and players for upcoming game
+def present_game_player_team_info(present_games,timeframe_present):
+
+	# pulling relevant data
+	home_team = int(present_games[timeframe_present]['home'])
+	away_team = int(present_games[timeframe_present]['away'])
+	game_id = str(present_games[timeframe_present]['gameid_num'])
+	home_players = present_games[timeframe_present]['home_players']
+	away_players = present_games[timeframe_present]['away_players']
+	player_teams = {}
+	for key in home_players:
+		player_key = int(key.split('_')[0])
+		player_teams[player_key] = home_team
+	for key in away_players:
+		player_key = int(key.split('_')[0])
+		player_teams[player_key] = away_team
+
+	# return team and player data
+	return home_team, away_team, game_id, home_players, away_players, player_teams
 
 
 
@@ -805,14 +900,14 @@ def games_pretty_output(revs, W, word_idx_map, revs_header, n):
 ##########################################
 
 # main function for create cnn data images
-def build_data(running_mode,outcome_mode,min_year,max_year,history_window):
+def build_data(running_mode,outcome_mode,timeframe_mode,min_year,max_year,history_window):
 
 	# data structures for output cnn images
 	revs = []; revs_header = []
 	W = []; W2 = []
 	word_idx_map = {}; word_idx_map2 = {}
 	word_idx_map['-1'] = 0; word_idx_map2['-1'] = 0
-	player_game_idx = 0; player_game_idx2 = 0
+	player_game_idx = 0; player_game_idx2 = 0; timeframe_present = 0
 
 	# initializing template for special custom stats
 	plyr_act_init, plry_shot_time_init = initial_special_stats()
@@ -823,37 +918,74 @@ def build_data(running_mode,outcome_mode,min_year,max_year,history_window):
 	# iterating over all games
 	print 'running mode: ' + running_mode
 	print 'pulling game data ...'
-	file_counter = -1; player_histories = {}; player_translations = {}; team_histories = {}; history_steps = history_window + 1
+	file_counter = -1; history_steps = history_window + 1
+	player_histories = {}; player_translations = {}; team_histories = {}; team_translations = {}
 	for c in range(min_year,max_year+1):
-		for m in range(1,10000):
+		m = 0
+		while m < 10000:
+			m = m + 1
 
-			# loading data from current bs file if it exists
-			game_dict, file_counter, file_suffix = loading_game_from_bs(c,m,file_counter,max_year,history_window)
-			if game_dict == -1:
-				continue
+			#################################
+			###  LOADING HISTORICAL DATA  ###
+			#################################
 
-			# determining teams
-			team_dict, home_team, away_team = determine_teams(game_dict['game_summary_header'],game_dict['game_summary'])
+			# if present timeframe mode, creating conditions to test present games
+			if timeframe_mode == 'present':
+				if (c == max_year) and (m == 10000) and (timeframe_present == 0):
+					timeframe_present = 1
 
-			# skip game if no existing line data for the current game
-			for team in game_dict['line_score']:
-				game_id = team[game_dict['line_score_header'].index('GAME_ID')]
-			if game_id not in line_data:
-				continue
+					# if present timeframe mode, pulling game data for present games
+					present_games, present_counter = pulling_present_games(player_histories)
+					m = m - present_counter + 1
 
-			# determining winner with respect to line or with respect to o/u
-			y, line_value = determine_cover(line_data,game_id,outcome_mode)
-			if (y == '') or (line_value == ''):
-				continue
+			# if past timeframe mode or not yet in present, load data from bs files and record histories
+			if timeframe_present == 0:
 
-			# determining rest stat for each team
-			home_rest, away_rest = determine_rest(game_dict['line_score_header'],game_dict['line_score'],game_id,home_team,away_team,line_data)
+				# loading data from current bs file if it exists
+				game_dict, file_counter, file_suffix = loading_game_from_bs(c,m,file_counter,max_year,history_window)
+				if game_dict == -1:
+					continue
 
-			# recoring player historical averages and determining current player teams
-			player_histories, history_met, home_players, away_players, player_teams = record_player_history(game_dict['player_stats'],game_dict['player_stats_header'],player_histories,history_steps,home_team,away_team,running_mode)
+				# determining teams
+				team_dict, home_team, away_team = determine_teams(game_dict['game_summary_header'],game_dict['game_summary'])
 
-			# recording team and opponent historical averages
-			team_histories, team_history_met = record_team_history(team_histories,home_team,away_team,history_steps)
+				# skip game if no existing line data for the current game
+				for team in game_dict['line_score']:
+					game_id = team[game_dict['line_score_header'].index('GAME_ID')]
+				if game_id not in line_data:
+					continue
+
+				# determining winner with respect to line or with respect to o/u
+				y, line_value = determine_cover(line_data,game_id,outcome_mode)
+				if (y == '') or (line_value == ''):
+					continue
+
+				# determining rest stat for each team
+				home_rest, away_rest = determine_rest(line_data,game_id)
+
+				# recoring player historical averages and determining current player teams
+				player_histories, history_met, home_players, away_players, player_teams = record_player_history(game_dict['player_stats'],game_dict['player_stats_header'],player_histories,history_steps,home_team,away_team,running_mode)
+
+				# recording team and opponent historical averages
+				team_histories, team_history_met = record_team_history(team_histories,home_team,away_team,history_steps)
+
+			# if present timeframe mode, load data from appropriate files
+			if timeframe_present > 0:
+
+				# load data on teams and players for upcoming game
+				home_team, away_team, game_id, home_players, away_players, player_teams = present_game_player_team_info(present_games,timeframe_present)
+
+				# load data on line and rest for upcoming game
+				y, line_value = determine_cover(line_data,game_id,outcome_mode)
+				home_rest, away_rest = determine_rest(line_data,game_id)
+				y = -1
+
+				# fixing varibles to allow for game prediction
+				history_met == 1; team_history_met == 1; file_suffix = 'present_' + str(timeframe_present) + '_' + game_id
+
+			################################################
+			###  STORING HISTORICAL DATA FOR PREDICTION  ###
+			################################################
 
 			# If player and team history lengths satisfied, begin calculating stats (based on historical games) for current game image
 			if (history_met == 1) and (team_history_met == 1):
@@ -869,18 +1001,34 @@ def build_data(running_mode,outcome_mode,min_year,max_year,history_window):
 
 					# calculating advanced stats
 					player_key = int(player_game_key.split('_')[0])
-					plyr_sum = player_histories[player_key]['sum']; plyr_avg = player_histories[player_key]['avg'] #plyr_avg = {}
-					plyr_avg = calculate_advanced_stats(plyr_avg,plyr_sum,team_histories,player_teams[player_key],league_stats,history_window)
+					plyr_sum = player_histories[player_key]['sum']; plyr_avg = player_histories[player_key]['avg']
+					plyr_avg = calculate_advanced_stats(plyr_avg,plyr_sum,team_histories,player_teams[player_key],league_stats,history_window,running_mode)
 
 					# adding stats required from current game
 					plyr_avg = set_current_game_specific_stats(plyr_avg,player_teams[player_key],line_value,home_team,home_rest,away_rest)
 
 					# creating CNN player row while maintaining data order
-					W, W2, k, k2, word_idx_map, player_game_idx, revs_header = forming_cnn_player_row(W,W2,word_idx_map,player_game_idx,plyr_avg,revs_header,player_game_key)
+					if timeframe_mode == 'present':
+						if timeframe_present > 0:
+							W, W2, k, k2, word_idx_map, player_game_idx, revs_header = forming_cnn_player_row(W,W2,word_idx_map,player_game_idx,plyr_avg,revs_header,player_game_key)
+					else:
+						W, W2, k, k2, word_idx_map, player_game_idx, revs_header = forming_cnn_player_row(W,W2,word_idx_map,player_game_idx,plyr_avg,revs_header,player_game_key)
 
 				# formatting and storing current game cnn image
-				W2, player_game_idx2, word_idx_map2, revs = storing_cnn_image(y,game_id,home_players,away_players,W,W2,word_idx_map,word_idx_map2,player_game_idx2,revs)
-				file_counter = file_counter + 1; print 'finished preping file: ' + str(file_counter) + ', game: ' + file_suffix
+				if timeframe_mode == 'present':
+					if timeframe_present > 0:
+						W2, player_game_idx2, word_idx_map2, revs = storing_cnn_image(y,game_id,line_value,home_team,away_team,team_translations,home_players,away_players,W,W2,word_idx_map,word_idx_map2,player_game_idx2,revs)
+						file_counter = file_counter + 1; timeframe_present = timeframe_present + 1; print 'finished preping file: ' + str(file_counter) + ', game: ' + file_suffix
+						continue
+					else:
+						file_counter = file_counter + 1; print 'finished preping file: ' + str(file_counter) + ', game: ' + file_suffix
+				else:
+					W2, player_game_idx2, word_idx_map2, revs = storing_cnn_image(y,game_id,line_value,home_team,away_team,team_translations,home_players,away_players,W,W2,word_idx_map,word_idx_map2,player_game_idx2,revs)
+					file_counter = file_counter + 1; print 'finished preping file: ' + str(file_counter) + ', game: ' + file_suffix
+
+			###################################
+			###  LOADING CURRENT GAME DATA  ###
+			###################################
 
 			# start loading current game stats. loading player shot data
 			plyr_shots, plyr_shots_time, plyr_shots_loc = pull_shots_data(game_id,plry_shot_time_init)
@@ -893,7 +1041,7 @@ def build_data(running_mode,outcome_mode,min_year,max_year,history_window):
 					continue
 
 				# loading current game stats for current player
-				player_dict, player_translations, player_team, player_key = pull_player_stats(player,plyr_act_init,game_dict['player_stats_header'],plyr_shots_time,plyr_shots,plyr_shots_loc,player_translations)
+				player_dict, player_translations, player_team, player_key, team_translations = pull_player_stats(player,plyr_act_init,game_dict['player_stats_header'],plyr_shots_time,plyr_shots,plyr_shots_loc,player_translations,team_translations)
 
 				# running summation of player stats for calculating current game team stats
 				team_dict = current_game_team_stats(player,player_dict,game_dict['player_stats_header'],team_dict,player_team)
@@ -909,6 +1057,10 @@ def build_data(running_mode,outcome_mode,min_year,max_year,history_window):
 				team_histories[team]['0'] = copy.deepcopy(team_dict[team])
 				team_histories[team]['oppo_' + '0'] = copy.deepcopy(team_dict[oppo_team])
 				team_counter = team_counter + 1
+
+	#######################
+	###  SAVING OUTPUT  ###
+	#######################
 
 	# outputting player translation file
 	if running_mode == 'model':
@@ -929,15 +1081,16 @@ def build_data(running_mode,outcome_mode,min_year,max_year,history_window):
 if __name__=="__main__":
 
 	# inital variable params
-	min_year = 14; max_year = 14; history_window = 5
+	min_year = 15; max_year = 15; history_window = 5
 
 	# specifying running mode
-	running_mode, model_mode, outcome_mode = arguments_validation(sys.argv)
+	running_mode, model_mode, outcome_mode, timeframe_mode = arguments_validation(sys.argv)
 
 	# building cnn data images
-	revs, W, word_idx_map, revs_header = build_data(running_mode,outcome_mode,min_year,max_year,history_window)
+	revs, W, word_idx_map, revs_header = build_data(running_mode,outcome_mode,timeframe_mode,min_year,max_year,history_window)
 	cPickle.dump([revs, W, word_idx_map, revs_header], open(model_mode + "_" + running_mode + "_" + outcome_mode + "_data.p", "wb"))
 	print "dataset created!"
 
 	# outputting easy to read json file for n sample games
-	games_pretty_output(revs, W, word_idx_map, revs_header, 5)
+	if timeframe_mode == 'past':
+		games_pretty_output(revs, W, word_idx_map, revs_header, 5)
