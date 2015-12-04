@@ -1,0 +1,62 @@
+2015-12-02 01:02:59: loading data...
+2015-12-02 01:05:03: data loaded!
+2015-12-02 01:05:40: Number of urls to train: 8524
+2015-12-02 01:05:40: Number of urls to test: 960
+2015-12-02 01:14:37: loading data...
+2015-12-02 01:14:51: data loaded!
+2015-12-02 01:14:54: Number of urls to train: 0
+2015-12-02 01:14:54: Number of urls to test: 1054
+2015-12-02 01:20:24: loading data...
+2015-12-02 01:20:25: data loaded!
+2015-12-02 01:20:26: Number of urls to train: 0
+2015-12-02 01:20:26: Number of urls to test: 137
+2015-12-02 06:13:11: loading data...
+2015-12-02 06:13:11: data loaded!
+2015-12-02 06:13:11: Number of urls to train: 0
+2015-12-02 06:13:11: Number of urls to test: 6
+2015-12-03 05:00:59: loading data...
+2015-12-03 05:01:01: data loaded!
+2015-12-03 05:01:01: Number of urls to train: 0
+2015-12-03 05:01:01: Number of urls to test: 145
+2015-12-03 05:03:22: loading data...
+2015-12-03 05:03:23: data loaded!
+2015-12-03 05:05:07: loading data...
+2015-12-03 05:05:09: data loaded!
+2015-12-03 05:05:10: Number of urls to train: 0
+2015-12-03 05:05:10: Number of urls to test: 145
+2015-12-03 05:06:39: loading data...
+2015-12-03 05:06:42: data loaded!
+2015-12-03 05:06:42: Number of urls to train: 0
+2015-12-03 05:06:42: Number of urls to test: 145
+2015-12-03 05:10:44: loading data...
+2015-12-03 05:10:46: data loaded!
+2015-12-03 05:10:46: Number of urls to train: 0
+2015-12-03 05:10:46: Number of urls to test: 145
+2015-12-03 05:11:58: loading data...
+2015-12-03 05:12:00: data loaded!
+2015-12-03 05:12:01: Number of urls to train: 0
+2015-12-03 05:12:01: Number of urls to test: 145
+2015-12-03 05:22:25: loading data...
+2015-12-03 05:22:27: data loaded!
+2015-12-03 05:22:27: Number of urls to train: 0
+2015-12-03 05:22:27: Number of urls to test: 145
+2015-12-03 05:29:30: loading data...
+2015-12-03 05:29:30: data loaded!
+2015-12-03 05:29:30: Number of urls to train: 0
+2015-12-03 05:29:30: Number of urls to test: 9
+2015-12-03 05:31:55: loading data...
+2015-12-03 05:31:55: data loaded!
+2015-12-03 05:32:51: loading data...
+2015-12-03 05:32:51: data loaded!
+2015-12-03 05:34:23: loading data...
+2015-12-03 05:34:23: data loaded!
+2015-12-03 05:34:23: Number of urls to train: 0
+2015-12-03 05:34:23: Number of urls to test: 9
+2015-12-03 05:37:29: loading data...
+2015-12-03 05:37:29: data loaded!
+2015-12-03 05:37:29: Number of urls to train: 0
+2015-12-03 05:37:29: Number of urls to test: 9
+2015-12-03 05:41:30: loading data...
+2015-12-03 05:41:30: data loaded!
+2015-12-03 05:41:30: Number of urls to train: 0
+2015-12-03 05:41:30: Number of urls to test: 9

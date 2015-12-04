@@ -26,7 +26,7 @@ import sys
 
 # Log Writing
 def log_write(log_string):
-    f_log = open('conv_net_log.txt','a')
+    f_log = open('trees_log.txt','a')
     timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
     print (timestamp + ': ' + log_string)
     f_log.write(timestamp + ': ' + log_string + '\n')
@@ -83,7 +83,8 @@ def make_idx_data_cv(W, revs, word_idx_map, revs_header, running_mode):
             cur_dict = {}
             for m in range(0,len(cur_row)):
                 cur_dict[cur_header[m]] = cur_row[m]
-            cur_dict['y'] = rev["y"]; cur_dict['game_id'] = rev["game_id"]
+            cur_dict['y'] = rev["y"]; cur_dict['line'] = str(rev["line"]); cur_dict['game_id'] = rev["game_id"]
+            cur_dict['home_team'] = rev["home_team"]; cur_dict['away_team'] = rev["away_team"]
 
             # If Model Mode, Splitting 1/10 For Train & Test Sets
             if running_mode == 'model':
@@ -107,19 +108,25 @@ def split_dataframes(datasets_train, datasets_test, running_mode):
 
     # Splitting Train Model Into x -> Model Inputs, y -> Model Categorization, g -> Game ID
     if running_mode == 'model':
-        x = datasets_train.drop('y',1).drop('game_id',1)
+        x = datasets_train.drop('y',1).drop('game_id',1).drop('line',1).drop('home_team',1).drop('away_team',1)
         y = datasets_train.ix[:,'y']
         g = datasets_train.ix[:,'game_id']
+        l = datasets_train.ix[:,'line']
+        h = datasets_train.ix[:,'home_team']
+        a = datasets_train.ix[:,'away_team']
     if running_mode == 'predict':
-        x = []; y = []; g = []
+        x = []; y = []; g = []; l = []; h = []; a = []
 
     # Splitting Test Model Into x -> Model Inputs, y -> Model Categorization, g -> Game ID
-    x_test = datasets_test.drop('y',1).drop('game_id',1)
+    x_test = datasets_test.drop('y',1).drop('game_id',1).drop('line',1).drop('home_team',1).drop('away_team',1)
     y_test = datasets_test.ix[:,'y']
     g_test = datasets_test.ix[:,'game_id']
+    l_test = datasets_test.ix[:,'line']
+    h_test = datasets_test.ix[:,'home_team']
+    a_test = datasets_test.ix[:,'away_team']
 
     # Returning Output
-    return x, y, g, x_test, y_test, g_test
+    return x, y, g, l, h, a, x_test, y_test, g_test, l_test, h_test, a_test
 
 
 
@@ -146,7 +153,7 @@ def create_load_model(x, y, running_mode):
 
 
 # Testing Model On Test / Prediction Set
-def test_model(x_test, y_test, g_test, running_mode):
+def test_model(x_test, y_test, g_test, l_test, h_test, a_test, running_mode):
 
     # Iterating Over All DataFrame Rows
     prediction_list = []
@@ -161,6 +168,9 @@ def test_model(x_test, y_test, g_test, running_mode):
         # Predict best fit category
         cur_dict = {}
         cur_dict['game_id'] = int(g_test[index:index+1])
+        cur_dict['line'] = l_test[index:index+1].get(index)
+        cur_dict['home_team'] = h_test[index:index+1].get(index)
+        cur_dict['away_team'] = a_test[index:index+1].get(index)
         cur_dict['known_category'] = int(y_test[index:index+1])
         if preds[0][1] > 0.5:
             cur_dict['predicted_category_1'] = 1; cur_dict['predicted_p_1'] = preds[0][1]
@@ -225,10 +235,10 @@ if __name__=="__main__":
     datasets = make_idx_data_cv(W, revs, word_idx_map, revs_header, running_mode)
 
     # Splitting DataFrames Into Appropriate SubFrames
-    x, y, g, x_test, y_test, g_test = split_dataframes(datasets[0], datasets[1], running_mode)
+    x, y, g, l, h, a, x_test, y_test, g_test, l_test, h_test, a_test = split_dataframes(datasets[0], datasets[1], running_mode)
 
     # Creating Or Loading Model
     clf = create_load_model(x, y, running_mode)
 
     # Testing Model On Test / Prediction Set
-    test_model(x_test, y_test, g_test, running_mode)
+    test_model(x_test, y_test, g_test, l_test, h_test, a_test, running_mode)
