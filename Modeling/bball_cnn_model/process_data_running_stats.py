@@ -156,7 +156,7 @@ def pull_line_data():
 def pulling_present_games(player_histories):
 
 	# iterating over all present games in gamelist file
-	f_present = open('/Users/terryjames/Dropbox/Public/NBA_data/gamelist.csv')
+	f_present = open('/Users/terryjames/Dropbox/Public/NBA_data/gamelist_2014.csv')
 	present_games = {}; present_counter = 0
 	for line in f_present:
 		row = (line.replace('\n','').replace('\r','')).split(',')
@@ -175,7 +175,7 @@ def pulling_present_games(player_histories):
 		present_counter = present_counter + 1
 
 	# iterating over all games in rosterlist
-	f_roster = open('/Users/terryjames/Dropbox/Public/NBA_data/rosterlist_all.csv')
+	f_roster = open('/Users/terryjames/Dropbox/Public/NBA_data/roster_by_game_2014.csv')
 	roster_counter = 0
 	for line in f_roster:
 		row = (line.replace('\n','').replace('\r','')).split(',')
@@ -296,16 +296,27 @@ def determine_rest(line_data,game_id):
 # recording player historical averages and determining current player teams
 def record_player_history(player_stats,player_stats_header,player_histories,history_steps,home_team,away_team,running_mode):
 
+	# specifying required number of historical steps needed for a player
+	required_steps = '1' if running_mode == 'predict' else str(history_steps-1)
+
 	# iterating over all players
-	history_met = 1; home_players = []; away_players = []; player_teams = {}
+	num_players = 0; history_met = 1; home_players = []; away_players = []; player_teams = {}
 	for player in player_stats:
+
+		# determining current player teams
+		player_key = player[player_stats_header.index('PLAYER_ID')]
+		player_teams[player_key] = player[player_stats_header.index('TEAM_ID')]
+		player_game_key = str(player_key) + '_' + str(player[player_stats_header.index('GAME_ID')])
+		if player_teams[player_key] == home_team:
+			home_players.append(player_game_key)
+		if player_teams[player_key] == away_team:
+			away_players.append(player_game_key)
 
 		# skip player if player did not play at any time in current game
 		if player[player_stats_header.index('MIN')] == None:
 			continue
 
 		# adding player to history dictionary if non-existant
-		player_key = player[player_stats_header.index('PLAYER_ID')]
 		if player_key not in player_histories:
 			player_histories[player_key] = {}
 			for b in range(0,history_steps):
@@ -316,7 +327,6 @@ def record_player_history(player_stats,player_stats_header,player_histories,hist
 		for b in range(history_steps-1,0,-1):
 			player_histories[player_key][str(b)] = copy.deepcopy(player_histories[player_key][str(b-1)])
 		player_histories[player_key]['0'] = {}
-		required_steps = '1' if running_mode == 'predict' else str(history_steps-1)
 		if player_histories[player_key][required_steps] == {}:
 			history_met = 0
 		else:
@@ -340,13 +350,33 @@ def record_player_history(player_stats,player_stats_header,player_histories,hist
 			# track number of games played for predict mode
 			player_histories[player_key]['sum']['game_counter'] = cur_counter
 
-		# determining current player teams
+	# ensure sufficient history even for players who did not have history updates
+	num_home_players = 0; num_away_players = 0; temp_home_players = []; temp_away_players = []
+	for player in player_stats:
+
+		player_key = player[player_stats_header.index('PLAYER_ID')]
 		player_teams[player_key] = player[player_stats_header.index('TEAM_ID')]
-		player_game_key = str(player_key) + '_' + str(player[player_stats_header.index('GAME_ID')])
+
 		if player_teams[player_key] == home_team:
-			home_players.append(player_game_key)
+			if num_home_players >= 9:
+				continue
+			temp_home_players.append(home_players[num_home_players])
+			num_home_players = num_home_players + 1
+
 		if player_teams[player_key] == away_team:
-			away_players.append(player_game_key)
+			if num_away_players >= 9:
+				continue
+			temp_away_players.append(away_players[num_away_players])
+			num_away_players = num_away_players + 1
+
+		if player_key in player_histories:
+			if player_histories[player_key][required_steps] == {}:
+				history_met = 0
+		else:
+			history_met = 0
+
+	home_players = temp_home_players
+	away_players = temp_away_players
 
 	# returning player histories and indicator for sufficient history
 	return player_histories, history_met, home_players, away_players, player_teams
@@ -659,6 +689,7 @@ def storing_cnn_image(y,game_id,line_value,home_team,away_team,team_translations
 			  "home_team": team_translations[str(home_team)],
 			  "away_team": team_translations[str(away_team)],
 			  "split": np.random.randint(0,10)}
+	#print datum; print ''
 	revs.append(datum)
 
 	# returning updated cnn dictionary mappings and images
@@ -931,7 +962,7 @@ def build_data(running_mode,outcome_mode,timeframe_mode,min_year,max_year,histor
 
 			# if present timeframe mode, creating conditions to test present games
 			if timeframe_mode == 'present':
-				if (c == max_year) and (m == 10000) and (timeframe_present == 0):
+				if (c == max_year) and (m == 500) and (timeframe_present == 0):
 					timeframe_present = 1
 
 					# if present timeframe mode, pulling game data for present games
@@ -981,7 +1012,7 @@ def build_data(running_mode,outcome_mode,timeframe_mode,min_year,max_year,histor
 				y = -1
 
 				# fixing varibles to allow for game prediction
-				history_met == 1; team_history_met == 1; file_suffix = 'present_' + str(timeframe_present) + '_' + game_id
+				history_met = 1; team_history_met = 1; file_suffix = 'present_' + str(timeframe_present) + '_' + game_id
 
 			################################################
 			###  STORING HISTORICAL DATA FOR PREDICTION  ###
@@ -1063,8 +1094,7 @@ def build_data(running_mode,outcome_mode,timeframe_mode,min_year,max_year,histor
 	#######################
 
 	# outputting player translation file
-	if running_mode == 'model':
-		saving_all_players(player_translations)
+	saving_all_players(player_translations)
 
 	# final output for model input
 	W3 = formatting_final_cnn_structure(file_counter,revs,player_game_idx2,k2,W2)
@@ -1081,7 +1111,7 @@ def build_data(running_mode,outcome_mode,timeframe_mode,min_year,max_year,histor
 if __name__=="__main__":
 
 	# inital variable params
-	min_year = 15; max_year = 15; history_window = 5
+	min_year = 14; max_year = 14; history_window = 5
 
 	# specifying running mode
 	running_mode, model_mode, outcome_mode, timeframe_mode = arguments_validation(sys.argv)
@@ -1092,5 +1122,5 @@ if __name__=="__main__":
 	print "dataset created!"
 
 	# outputting easy to read json file for n sample games
-	if timeframe_mode == 'past':
+	if len(revs) >= 5:
 		games_pretty_output(revs, W, word_idx_map, revs_header, 5)

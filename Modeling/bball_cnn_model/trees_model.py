@@ -135,7 +135,7 @@ def create_load_model(x, y, running_mode):
 
     # If Model Mode Create Model
     if running_mode == 'model':
-        clf = RandomForestClassifier(n_estimators=500)
+        clf = GradientBoostingClassifier(n_estimators=500)
         clf = clf.fit(x,y)
         print 'Classes: ' + str(clf.classes_)
         with open('trees_model.p','wb') as f:
@@ -200,6 +200,15 @@ def test_model(x_test, y_test, g_test, l_test, h_test, a_test, running_mode):
         for element in prediction_list:
             f_record.write(str(element).replace('\n','') + '\n')
         f_record.close()
+
+        f_easy_record = open("trees_model_easy_results.txt","w")
+        temp_prediction_list = copy.deepcopy(prediction_list)
+        for element in temp_prediction_list:
+            del element['predicted_category_2']
+            del element['predicted_p_2']
+            element['how_to_bet'] = 'home team covers' if element['predicted_category_1'] == 1 else 'home team fails to cover'
+            f_easy_record.write(str(element).replace('\n','') + '\n\n')
+        f_easy_record.close()
 
         # Storing Wagers File
         f_wagers = open('wagers.csv','w')
