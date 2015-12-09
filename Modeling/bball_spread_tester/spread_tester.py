@@ -27,7 +27,7 @@ def import_lines(year_indicator):  # imports csv file with line data
 
 
 def import_wagers():  # imports csv file with games to be bet on
-    wagers_filepath = './linedata/twagers.csv'
+    wagers_filepath = './wagers.csv'
     df2 = pd.read_csv(wagers_filepath, index_col='game_id')
     return df2
 
