@@ -120,9 +120,8 @@ def populate_rosters(game_id, home_team_id, away_team_id, df_teams, df_bs):
 def calc_basic_stats(player_id, df_games):
     df_prune = df_games.iloc[:, 8:]
     df_sum = df_prune.sum(axis=0)
+    plyr_sum = dict(zip(dd.keys(), [[sum(item)] for item in dd.values()]))
 
-    if pd.isnull(df_prune).any():
-        print 'NaN'
     plyr_sum = df_sum.to_dict()
 
     df_avg = df_prune.mean(axis=0)
@@ -137,8 +136,7 @@ def calc_basic_stats(player_id, df_games):
 
 
 def calc_league_stats(game_id, df_teams):
-    query_string = '(GAME_ID < ' + str(game_id) + ')'
-    df_league_games = df_teams.query(query_string)
+    df_league_games = df_teams[df_teams['GAME_ID'] < game_id]
     df_league_sum = df_league_games.iloc[:, 5:].sum(axis=0)
 
     league_stats = {}
