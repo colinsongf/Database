@@ -10,6 +10,15 @@ min_player_games = 1  # num of games each player has to play at minimum
 num_players = 9  # number of players to use from roster
 
 '''
+Some lessons learned in pandas performance:
+- for accessing data values, especially scalars, pandas is actually pretty slow. Calculations run much faster if you convert into a dict and access values that way
+- pd.mean() and pd.sum() can run really slow if datatype of column isn't float. dict_column_sum() and dict_column_avg() are my custom methods that perform better in some cases
+- Using python logic is faster for queries on small dataframes (<10,000 rows) whereas pd.query() is faster for large dataframes
+- Queries are a major limiting factor for speed. Helpful to limit the number of queries and the size of the dataframe being queried.
+- Due to above, faster to pre-select / filter the dataframes (ie selecting only games played previous to this one) before running a large number of queries on it.
+'''
+
+'''
 Helper functions for numeric options on pandas dataframes for performance reasons
 '''
 
@@ -215,10 +224,10 @@ def populate_rosters(game_id, home_team_id, away_team_id, df_teams, df_bs):
     home_prev_game = team_prev_games(1, game_id, home_team_id, df_teams)
     away_prev_game = team_prev_games(1, game_id, away_team_id, df_teams)
 
-    # construct query strings
-    cond = ['GAME_ID == ', 'TEAM_ID == ']
-    home_query = query(cond, [home_prev_game, home_team_id])
-    away_query = query(cond, [away_prev_game, away_team_id])
+    # not using the pd.query() method for performance reasons
+    # cond = ['GAME_ID == ', 'TEAM_ID == ']
+    # home_query = query(cond, [home_prev_game, home_team_id])
+    # away_query = query(cond, [away_prev_game, away_team_id])
 
     # print home_prev_game, home_team_id
     # construct lists of player id values
@@ -249,7 +258,6 @@ def calc_basic_stats(player_id, df_games):
     plyr_sum = df_prune.sum(axis=0).to_dict()
 
     plyr_avg = dict_avg(plyr_sum, len(df_prune.index))  # using custom method for performance
-
 
     # add player id to sum dict
     plyr_sum['PLAYER_ID'] = player_id
@@ -393,7 +401,7 @@ def calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats):
     else:
         PProd_FG_part = 2*(plyr_sum['FGM']+0.5*plyr_sum['FG3M'])*(1-0.5*((plyr_sum['PTS']-plyr_sum['FTM'])/(2*plyr_sum['FGA']))*qAST)
 
-    PProd_AST_part = 2*((TM_FGM - plyr_sum['FGM'] +0.5*(TM_3PM-plyr_sum['FG3M']))/(TM_FGM-plyr_sum['FGM']))*0.5*(((TM_PTS-TM_FTM)-(plyr_sum['PTS']-plyr_sum['FTM']))/(2*(TM_FGA-plyr_sum['FGA'])))*plyr_sum['AST']
+    PProd_AST_part = 2*((TM_FGM - plyr_sum['FGM'] + 0.5*(TM_3PM-plyr_sum['FG3M']))/(TM_FGM-plyr_sum['FGM']))*0.5*(((TM_PTS-TM_FTM)-(plyr_sum['PTS']-plyr_sum['FTM']))/(2*(TM_FGA-plyr_sum['FGA'])))*plyr_sum['AST']
     PProd_ORB_part = plyr_sum['OREB']*TM_ORB_weight*TM_plays*(TM_PTS/(TM_FGM+(1-(1-(TM_FTM/TM_FTA))**2)*0.4*TM_FTA))
     points_produced = (PProd_FG_part+PProd_AST_part+plyr_sum['FTM'])*(1-(TM_ORB/TM_scoring_poss)*TM_ORB_weight*TM_plays)+PProd_ORB_part
     scoring_posessions = (FG_part+AST_part+FT_part)*(1-(TM_ORB/TM_scoring_poss)*TM_ORB_weight*TM_plays)+ORB_part
@@ -516,7 +524,7 @@ def iterate_player_list(player_list, team_id, game_id, df_bs, df_teams, league_s
     team_histories = {}
     opp_histories = {}
 
-    for player_id in player_list: # iterate over players
+    for player_id in player_list:  # iterate over players
         # get previous games by player
         player_game_list, player_teams, df_players = player_prev_games(history_steps, game_id, player_id, df_bs)
 
@@ -558,7 +566,7 @@ if __name__ == "__main__":
         # load data into dataframes
         df_lines, df_bs, df_teams = load_dataframes(year)
 
-        for index, row in df_lines.iterrows(): # iterate over games
+        for index, row in df_lines.iterrows():  # iterate over games
             game_id = index
 
             # skip if playoff game
