@@ -4,89 +4,64 @@ import tables
 import math
 import time
 
-min_year, max_year = 3, 3
-history_steps = 5
-min_player_games = 1
+min_year, max_year = 3, 3  # years to iterate over ie 3, 14 means 2003-2014
+history_steps = 5  # num of games back to use for stats
+min_player_games = 1  # num of games each player has to play at minimum
 num_players = 9  # number of players to use from roster
 
-
-def load_dataframes(year):
-    year_indicator = "%02d" % (year,)
-    season_cond = '20' + year_indicator
-    lines_filepath = './data/lines/lines.h5'
-    players_filepath = './data/players/bs' + year_indicator + '.h5'
-    team_filepath = './data/teams/tbs' + year_indicator + '.h5'
-
-    df_lines = pd.read_hdf(lines_filepath, 'df_lines')
-    df_lines = df_lines[df_lines['Season'] == int(season_cond)]
-
-    df_bs = pd.read_hdf(players_filepath, 'df_bs')
-    df_teams = pd.read_hdf(team_filepath, 'df_team_bs')
-
-    return df_lines, df_bs, df_teams
+'''
+Helper functions for numeric options on pandas dataframes for performance reasons
+'''
 
 
-def player_prev_games(n, game_id, player_id, df_bs):
-    df_games = df_bs[(df_bs['PLAYER_ID'] == player_id) & (df_bs['MIN'] > np.timedelta64(0))]
+def dict_column_sum(df_sum):
+    '''
+    dict_column_sum: helper function that sums the columns in a pandas dataframe and returns them to a dict
 
-    # select last n games
-    df_games = df_games.tail(n)
+    Note: Unused because slower than pd.sum(axis=0)
+    '''
+    stats_header = df_sum.columns.values.tolist()
+    dict_sum = dict(zip(stats_header, [df_sum[col].values.sum(axis=0) for col in stats_header]))
 
-    game_list = df_games['GAME_ID'].values
-    player_teams = df_games['TEAM_ID'].values.tolist()
-    return game_list, player_teams, df_games
-
-
-def team_prev_games(n, game_id, team_id, df_teams):
-    df_games = df_teams[(df_teams['TEAM_ID'] == team_id)]
-    df_games = df_games.tail(n)
-
-    game_list = df_games['GAME_ID'].values
-
-    return game_list
+    return dict_sum
 
 
-def get_result(row):
-    y = 1 if row['ATSr'] == 'W' else 0
+def dict_column_avg(df_avg):
+    '''
+    dict_column_avg: helper function that averages the columns in a df and returns to a dict
 
-    line = float(row['Line'])
+    Note: Significantly faster than pd.mean(axis=0)
+    '''
+    stats_header = df_avg.columns.values.tolist()
+    dict_avg = dict(zip(stats_header, [df_avg[col].values.mean(axis=0) for col in stats_header]))
 
-    return y, line
-
-
-def get_rest(row):
-    rest_array = row['Rest'].split('&')
-    home_rest = 0 if rest_array[0] == '' else rest_array[0]
-    away_rest = 0 if rest_array[1] == '' else rest_array[1]
-
-    return home_rest, away_rest
+    return dict_avg
 
 
-def get_team_ids(row):
-    home_team = row['home_id']
-    away_team = row['away_id']
-
-    return home_team, away_team
-
-
+def minutes(td):
+    '''
+    minutes: helper function that converts a timedelta object to minutes
+    '''
+    return td / np.timedelta64(1, 'm')
 
 '''
-def calculate_player_stats(df_games, player_id):
-    # calculate player stats from game
-
-def calculate_team_stats(df_team_bs, game_list, team_id):
-    # calculates sum and average stats for team over a given game list
-
-def calculate_opp_stats(df_team_bs, game_list, team_id):
-# calculates sum and average stats for opposing teams over a given game list
-
-def calculate_advanced_stats(player_stats, team_stats, opp_stats)
-
-
+Helper functions to construct strings
 '''
+
+
+def game_string(game_list):
+    '''
+    game_string: Helper function to make strings for pd.query()
+    Note: Stopped using pd.query() for the most part for performance reasons
+    '''
+    return '[' + ', '.join(map(str, game_list)) + ']'
 
 
 def query(conditions, values):
+    '''
+    query: helper function to help make a query string to feed into pd.query()
+    Note: Largely stopped using pd.query() for performance reasons
+    '''
     length = len(conditions)
 
     if len(conditions) != len(values):
@@ -101,8 +76,114 @@ def query(conditions, values):
     return query_string
 
 
-def populate_rosters(game_id, home_team_id, away_team_id, df_teams, df_bs):
+'''
+Functions that get data from the lines dataframe
+'''
 
+
+def get_result(row):
+    '''
+    get_result: gets the line and ATS result from the lines df
+    '''
+    y = 1 if row['ATSr'] == 'W' else 0
+
+    line = float(row['Line'])
+
+    return y, line
+
+
+def get_rest(row):
+    '''
+    get_rest: gets the home and away rest from the lines df
+    '''
+    rest_array = row['Rest'].split('&')
+    home_rest = 0 if rest_array[0] == '' else rest_array[0]
+    away_rest = 0 if rest_array[1] == '' else rest_array[1]
+
+    return home_rest, away_rest
+
+
+def get_team_ids(row):
+    '''
+    get_team_ids: get home and away ids from the lines df
+    '''
+    home_team = row['home_id']
+    away_team = row['away_id']
+
+    return home_team, away_team
+
+'''
+Functions that get lists of previous games
+'''
+
+
+def player_prev_games(n, game_id, player_id, df_bs):
+    '''
+    player_prev_games: returns the n prev games a player played in
+    returns a list of game ids, a list of team ids the player played on in the last n games, and a dataframe of player boxscore data for those games
+    '''
+    df_games = df_bs[(df_bs['PLAYER_ID'] == player_id) & (df_bs['MIN'] > np.timedelta64(0))]
+
+    # select last n games
+    df_games = df_games.tail(n)
+
+    game_list = df_games['GAME_ID'].values
+    player_teams = df_games['TEAM_ID'].values.tolist()
+    return game_list, player_teams, df_games
+
+
+def team_prev_games(n, game_id, team_id, df_teams):
+    '''
+    team_prev_games: returns a list of game ids of the last n games a team played in
+    '''
+    df_games = df_teams[(df_teams['TEAM_ID'] == team_id)]
+    df_games = df_games.tail(n)
+
+    game_list = df_games['GAME_ID'].values
+
+    return game_list
+
+
+def query_prev_games(df_bs, df_teams, game_id):
+    '''
+    query_prev_games: takes a dataframe of boxscore data for a season and returns a smaller dataframe of all previous games
+    '''
+    df_bs_prev = df_bs[df_bs['GAME_ID'] < game_id]
+    df_teams_prev = df_teams[df_teams['GAME_ID'] < game_id]
+
+    return df_bs_prev, df_teams_prev
+
+'''
+Functions that load dataframes and get player lists to calculate stats for
+'''
+
+
+def load_dataframes(year):
+    '''
+    load_dataframes: reads hdf storage files and returns dataframes for a season
+    '''
+    # forming strings to read in files
+    year_indicator = "%02d" % (year,)
+    season_cond = '20' + year_indicator
+    lines_filepath = './data/lines/lines.h5'
+    players_filepath = './data/players/bs' + year_indicator + '.h5'
+    team_filepath = './data/teams/tbs' + year_indicator + '.h5'
+
+    # read in lines data and limit to current season
+    df_lines = pd.read_hdf(lines_filepath, 'df_lines')
+    df_lines = df_lines[df_lines['Season'] == int(season_cond)]
+
+    # load team and player boxscores
+    df_bs = pd.read_hdf(players_filepath, 'df_bs')
+    df_teams = pd.read_hdf(team_filepath, 'df_team_bs')
+
+    return df_lines, df_bs, df_teams
+
+
+def populate_rosters(game_id, home_team_id, away_team_id, df_teams, df_bs):
+    '''
+    populate_rosters: returns a home and away player list based on the boxscore of the previous game that each team played
+    '''
     home_prev_game = team_prev_games(1, game_id, home_team_id, df_teams)
     away_prev_game = team_prev_games(1, game_id, away_team_id, df_teams)
 
@@ -117,20 +198,15 @@ def populate_rosters(game_id, home_team_id, away_team_id, df_teams, df_bs):
     return home_player_list[:num_players], away_player_list[:num_players]
 
 
-def dict_column_sum(df_sum):
-    stats_header = df_sum.columns.values.tolist()
-    dict_sum = dict(zip(stats_header, [df_sum[col].values.sum(axis=0) for col in stats_header]))
+'''
+Functions to calculate stats
+'''
 
-    return dict_sum
-
-
-def dict_column_avg(df_avg):
-    stats_header = df_avg.columns.values.tolist()
-    dict_avg = dict(zip(stats_header, [df_avg[col].values.mean(axis=0) for col in stats_header]))
-
-    return dict_avg
 
 def calc_basic_stats(player_id, df_games):
+    '''
+    calc_basic_stats: calculates sum and average of boxscore stats for a given player over a given dataframe. Returns 2 dicts
+    '''
     df_prune = df_games.iloc[:, 8:]
     # plyr_sum = dict_column_sum(df_prune)
     plyr_sum = df_prune.sum(axis=0).to_dict()
@@ -145,6 +221,9 @@ def calc_basic_stats(player_id, df_games):
 
 
 def calc_league_stats(game_id, df_teams):
+    '''
+    calc_league_stats: calculates league stats based on all games played so far in a season. Returns a dict
+    '''
     # df_league_games = df_teams[df_teams['GAME_ID'] < game_id]
     league_sum = df_teams.iloc[:, 5:].sum(axis=0).to_dict()
 
@@ -164,8 +243,11 @@ def calc_league_stats(game_id, df_teams):
 
     return league_stats
 
-def calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats):
 
+def calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats):
+    '''
+    calc_advanced_stats: calculates all advanced stats based on the sum stats of a player, player's teams, and player's opponents. Returns a dict
+    '''
     TM_MP, OP_MP = minutes(team_sum['MIN']), minutes(opp_sum['MIN'])
 
     TM_FGA, TM_FTA = float(team_sum['FGA']), float(team_sum['FTA'])
@@ -306,11 +388,10 @@ def calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats):
     return plyr_advanced
 
 
-def game_string(game_list):
-    return '[' + ', '.join(map(str, game_list)) + ']'
-
-
 def calc_team_stats(game_list, player_teams, df_teams):
+    '''
+    calc_team_stats: takes in a list of games, a list of teams that a player played on, and returns summed team stats over a given number of teams
+    '''
     df_games = df_teams[df_teams['GAME_ID'].isin(game_list) & df_teams['TEAM_ID'].isin(player_teams)]
 
     # df_prune = df_games.iloc[:, 5:].drop(['FG_PCT', 'FG3_PCT', 'FT_PCT'], axis=1)
@@ -322,6 +403,9 @@ def calc_team_stats(game_list, player_teams, df_teams):
 
 
 def calc_opp_stats(game_list, player_teams, df_teams):
+    '''
+    calc_opp_stats: takes in a list of games, a list of teams that a player played on, and returns summed opponent stats over a given number of teams
+    '''
     df_games = df_teams[df_teams['GAME_ID'].isin(game_list) & ~df_teams['TEAM_ID'].isin(player_teams)]
 
     # df_prune = df_games.iloc[:, 5:].drop(['FG_PCT', 'FG3_PCT', 'FT_PCT'], axis=1)
@@ -334,6 +418,9 @@ def calc_opp_stats(game_list, player_teams, df_teams):
 
 
 def calc_poss(team_sum, opp_sum):
+    '''
+    calc_poss: takes in summed team and opponent stats and returns a number of possessions
+    '''
     TM_FGA, TM_FTA = team_sum['FGA'], team_sum['FTA']
     TM_ORB, TM_DRB = team_sum['OREB'], team_sum['DREB']
     TM_FGM, TM_TOV = team_sum['FGM'], team_sum['TO']
@@ -348,6 +435,9 @@ def calc_poss(team_sum, opp_sum):
 
 
 def calc_pace(team_sum, opp_sum):
+    '''
+    calc_poss: takes in summed team and opponent stats and returns a pace factor
+    '''
     TM_POS = calc_poss(team_sum, opp_sum)
     OP_POS = calc_poss(opp_sum, team_sum)
     TM_MP = minutes(team_sum['MIN'])
@@ -356,26 +446,20 @@ def calc_pace(team_sum, opp_sum):
     return pace
 
 
-def minutes(td):
-    return td / np.timedelta64(1, 'm')
-
-
 def history_met(game_id, team_games):
+    '''
+    history_met: supposedly checks if history requirements met but haven't been using this correctly
+    '''
     if (team_games < history_steps):  # check that team has played enough games
         return False
 
     return True
 
 
-def query_prev_games(df_bs, df_teams, game_id):
-    df_bs_prev = df_bs[df_bs['GAME_ID'] < game_id]
-    df_teams_prev = df_teams[df_teams['GAME_ID'] < game_id]
-
-    return df_bs_prev, df_teams_prev
-
-
 def iterate_player_list(player_list, team_id, game_id, df_bs, df_teams, league_stats):
-
+    '''
+    iterate_player_list: calculates all stats for players in a player list
+    '''
     roster_output = []
     error_output = {}
     for player_id in player_list:
