@@ -460,51 +460,80 @@ def iterate_player_list(player_list, team_id, game_id, df_bs, df_teams, league_s
     '''
     iterate_player_list: calculates all stats for players in a player list
     '''
+    # init empty output lists
     roster_output = []
-    error_output = {}
-    for player_id in player_list:
+    error_output = []
+    for player_id in player_list: # iterate over players
+        # get previous games by player
         player_game_list, player_teams, df_players = player_prev_games(history_steps, game_id, player_id, df_bs)
+
+        # if no previous games for a player, quit loop and return error
         if not player_game_list.size:
             return error_output
+
+        # sum and average player stats
         plyr_sum, plyr_avg = calc_basic_stats(player_id, df_players)
+
+        # calculate team and opponent stats
         team_sum = calc_team_stats(player_game_list, player_teams, df_teams)
         opp_sum = calc_opp_stats(player_game_list, player_teams, df_teams)
+
+        # calculate advanced stats
         plyr_advanced = calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats)
+
+        # add data to final output
         roster_output.append(plyr_avg.values())
         roster_output.append(plyr_advanced.values())
 
     return roster_output
 
 if __name__ == "__main__":
-    start_time = time.time()
-    for year in range(min_year, max_year + 1):
+    start_time = time.time()  # timer function
+
+    for year in range(min_year, max_year + 1):  # iterate over seasons
+
+        # load data into dataframes
         df_lines, df_bs, df_teams = load_dataframes(year)
 
-        for index, row in df_lines.iterrows():
+        for index, row in df_lines.iterrows(): # iterate over games
             game_id = index
+
+            # skip if playoff game
             if np.isnan(index):
                 continue
+
+            # get team ids
             home_team_id, away_team_id = get_team_ids(row)
+
+            # filter dataframes to games previous to current one
             df_bs_prev, df_teams_prev = query_prev_games(df_bs, df_teams, game_id)
 
+            # check that sufficient number of games played
             team_games = min(len(team_prev_games(history_steps, game_id, home_team_id, df_teams_prev)), len(team_prev_games(history_steps, game_id, away_team_id, df_teams_prev)))
 
             if (team_games < history_steps):
                 continue
 
+            # get player lists from previous boxscore
             home_player_list, away_player_list = populate_rosters(game_id, home_team_id, away_team_id, df_teams_prev, df_bs_prev)
 
-
+            # get line and result data
             y, line = get_result(row)
             home_rest, away_rest = get_rest(row)
+
+            # calculate league stats
             league_stats = calc_league_stats(game_id, df_teams_prev)
 
+            # iterate over player lists and calculate player stats
             home_output = iterate_player_list(home_player_list, home_team_id, game_id, df_bs_prev, df_teams_prev, league_stats)
 
+            # skip if any players don't have a previous game
             if not home_output:
                 continue
+
             away_output = iterate_player_list(away_player_list, away_team_id, game_id, df_bs_prev, df_teams_prev, league_stats)
 
+            # skip if any players don't have a previous game
             if not away_output:
                 continue
 
