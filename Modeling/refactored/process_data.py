@@ -179,13 +179,13 @@ def team_prev_games(n, game_id, team_id, df_teams):
     return game_list
 
 
-def query_prev_games(df_bs, df_teams, game_id):
+def query_prev_games(df_bs, df_teams, game_date):
     '''
     query_prev_games: takes a dataframe of boxscore data for a season and returns a smaller dataframe of all previous games
     '''
-    # query dataframes for game previous to current game id
-    df_bs_prev = df_bs[df_bs['GAME_ID'] < game_id]
-    df_teams_prev = df_teams[df_teams['GAME_ID'] < game_id]
+    # query dataframes for game previous to current date
+    df_bs_prev = df_bs[df_bs['Date'] < game_date]
+    df_teams_prev = df_teams[df_teams['Date'] < game_date]
 
     return df_bs_prev, df_teams_prev
 
@@ -253,7 +253,7 @@ def calc_basic_stats(player_id, df_games):
     calc_basic_stats: calculates sum and average of boxscore stats for a given player over a given dataframe. Returns 2 dicts
     '''
     # select out unwanted columns
-    df_prune = df_games.iloc[:, 8:]
+    df_prune = df_games.iloc[:, 9:]
 
     # sum and average columsn and write to dict
     plyr_sum = df_prune.sum(axis=0).to_dict()
@@ -577,8 +577,8 @@ if __name__ == "__main__":
             # get team ids
             home_team_id, away_team_id = get_team_ids(row)
 
-            # filter dataframes to games previous to current one to improve performance
-            df_bs_prev, df_teams_prev = query_prev_games(df_bs, df_teams, game_id)
+            # filter dataframes to games previous to current date to improve performance
+            df_bs_prev, df_teams_prev = query_prev_games(df_bs, df_teams, row['Date'])
 
             # check that sufficient number of games played
             team_games = min(len(team_prev_games(history_steps, game_id, home_team_id, df_teams_prev)), len(team_prev_games(history_steps, game_id, away_team_id, df_teams_prev)))

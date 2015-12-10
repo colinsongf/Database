@@ -21,7 +21,7 @@ def set_globals():
     filepath = '/Users/' + username + '/Dropbox/Public/NBA_data/'
 
     # choose the years to run the script for, min_year of 3 starts from 2003
-    min_year, max_year = 11, 11
+    min_year, max_year = 3, 3
 
     # columns that should be string value
     str_cols = ['TEAM_ABBREVIATION', 'TEAM_CITY', 'PLAYER_NAME',
@@ -232,10 +232,10 @@ if __name__ == "__main__":
     # df_bs, df_team_bs = initialize_bs(3)
     # print df_bs.dtype
     # create_bs()
-
-    create_shots()  # run the script to create the shots data
-    df_shots = pd.read_hdf('shots03.h5', 'df_shots')  # reads hdf file into pandas df
-    print df_shots.head()  # prints first 5 rows of the dataframe
+    create_bs()
+    # create_shots()  # run the script to create the shots data
+    # df_shots = pd.read_hdf('shots03.h5', 'df_shots')  # reads hdf file into pandas df
+    # print df_shots.head()  # prints first 5 rows of the dataframe
 
 
 
