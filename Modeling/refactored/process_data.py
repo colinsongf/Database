@@ -122,11 +122,14 @@ def player_prev_games(n, game_id, player_id, df_bs):
     player_prev_games: returns the n prev games a player played in
     returns a list of game ids, a list of team ids the player played on in the last n games, and a dataframe of player boxscore data for those games
     '''
+
+    # query dataframe for games by player and minutes played > 0
     df_games = df_bs[(df_bs['PLAYER_ID'] == player_id) & (df_bs['MIN'] > np.timedelta64(0))]
 
     # select last n games
     df_games = df_games.tail(n)
 
+    # construct list of game ids and list of team ids a player played for
     game_list = df_games['GAME_ID'].values
     player_teams = df_games['TEAM_ID'].values.tolist()
     return game_list, player_teams, df_games
@@ -136,9 +139,13 @@ def team_prev_games(n, game_id, team_id, df_teams):
     '''
     team_prev_games: returns a list of game ids of the last n games a team played in
     '''
+    # query previous games df for teams with same team id
     df_games = df_teams[(df_teams['TEAM_ID'] == team_id)]
+
+    # select last n games
     df_games = df_games.tail(n)
 
+    # create list of game ids
     game_list = df_games['GAME_ID'].values
 
     return game_list
@@ -148,6 +155,7 @@ def query_prev_games(df_bs, df_teams, game_id):
     '''
     query_prev_games: takes a dataframe of boxscore data for a season and returns a smaller dataframe of all previous games
     '''
+    # query dataframes for game previous to current game id
     df_bs_prev = df_bs[df_bs['GAME_ID'] < game_id]
     df_teams_prev = df_teams[df_teams['GAME_ID'] < game_id]
 
@@ -184,14 +192,17 @@ def populate_rosters(game_id, home_team_id, away_team_id, df_teams, df_bs):
     '''
     populate_rosters: returns a home and away player list based on the boxscore of the previous game that each team played
     '''
+
+    # get game id of previous home and away games
     home_prev_game = team_prev_games(1, game_id, home_team_id, df_teams)
     away_prev_game = team_prev_games(1, game_id, away_team_id, df_teams)
 
+    # construct query strings
     cond = ['GAME_ID == ', 'TEAM_ID == ']
     home_query = query(cond, [home_prev_game, home_team_id])
     away_query = query(cond, [away_prev_game, away_team_id])
 
-    # print df_bs.query(home_query)
+    # construct lists of player id values
     home_player_list = df_bs.query(home_query).loc[:, 'PLAYER_ID'].values
     away_player_list = df_bs.query(away_query).loc[:, 'PLAYER_ID'].values
 
@@ -207,11 +218,15 @@ def calc_basic_stats(player_id, df_games):
     '''
     calc_basic_stats: calculates sum and average of boxscore stats for a given player over a given dataframe. Returns 2 dicts
     '''
-    df_prune = df_games.iloc[:, 8:]
-    # plyr_sum = dict_column_sum(df_prune)
-    plyr_sum = df_prune.sum(axis=0).to_dict()
-    plyr_avg = dict_column_avg(df_prune)
 
+    # select out unwanted columns
+    df_prune = df_games.iloc[:, 8:]
+
+    # sum and average columsn and write to dict
+    plyr_sum = df_prune.sum(axis=0).to_dict()
+    plyr_avg = dict_column_avg(df_prune)  # using custom method for performance
+
+    # adjust percentage stats to reflect actual percentages
     plyr_avg['FG_PCT'] = 0.0 if (plyr_sum['FGA'] == 0) else (plyr_sum['FGM'] / plyr_sum['FGA'])
     plyr_avg['FG3_PCT'] = 0.0 if (plyr_sum['FG3A'] == 0) else (plyr_sum['FG3M'] / plyr_sum['FG3A'])
     plyr_avg['FT_PCT'] = 0.0 if (plyr_sum['FTA'] == 0) else (plyr_sum['FTM'] / plyr_sum['FTA'])
@@ -224,10 +239,12 @@ def calc_league_stats(game_id, df_teams):
     '''
     calc_league_stats: calculates league stats based on all games played so far in a season. Returns a dict
     '''
-    # df_league_games = df_teams[df_teams['GAME_ID'] < game_id]
+    # sum dataframe columns and return a dict
     league_sum = df_teams.iloc[:, 5:].sum(axis=0).to_dict()
 
     league_stats = {}
+
+    # initialize team stats for easier formulas
     TM_FGA, TM_FTA = league_sum['FGA'], league_sum['FTA']
     TM_FGM, TM_TOV = league_sum['FGM'], league_sum['TO']
     TM_ORB, TM_DRB = league_sum['OREB'], league_sum['DREB']
@@ -248,6 +265,7 @@ def calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats):
     '''
     calc_advanced_stats: calculates all advanced stats based on the sum stats of a player, player's teams, and player's opponents. Returns a dict
     '''
+    # initialize vars for easier formulas, cast to float for division
     TM_MP, OP_MP = minutes(team_sum['MIN']), minutes(opp_sum['MIN'])
 
     TM_FGA, TM_FTA = float(team_sum['FGA']), float(team_sum['FTA'])
@@ -272,8 +290,10 @@ def calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats):
     OP_PACE = calc_pace(opp_sum, team_sum)
     OP_POS = calc_poss(opp_sum, team_sum)
 
+    # initialize output dictionary with player id
     plyr_advanced = {'PLAYER_ID': plyr_sum['PLAYER_ID']}
 
+    # convert minutes from Timedelta to minutes format
     plyr_sum['MIN'] = minutes(plyr_sum['MIN'])
 
     # adv stat: true shot percentage
@@ -406,6 +426,7 @@ def calc_opp_stats(game_list, player_teams, df_teams):
     '''
     calc_opp_stats: takes in a list of games, a list of teams that a player played on, and returns summed opponent stats over a given number of teams
     '''
+    # query games that a player played in but wasn't their team id
     df_games = df_teams[df_teams['GAME_ID'].isin(game_list) & ~df_teams['TEAM_ID'].isin(player_teams)]
 
     # df_prune = df_games.iloc[:, 5:].drop(['FG_PCT', 'FG3_PCT', 'FT_PCT'], axis=1)
