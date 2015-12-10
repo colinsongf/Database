@@ -101,6 +101,23 @@ def query(conditions, values):
     return query_string
 
 
+def isin_list(dfcol, list):
+    '''
+    isin_list: Creates a list comprehension intended to see if elements of a dataframe column are in a given list.
+
+    Note: Faster than pd.isin() for small dataframes. But I'm avoiding its use for now because it'll only shave off 10 seconds and it's a lot less intuitive to read and write.
+    '''
+    l_dict = dict(zip(list, [0]*list.size))
+    return [x in l_dict for x in dfcol]
+
+
+def isnotin_list(dfcol, list):
+    '''
+    isnotin_list: Inverse of isin_list
+    '''
+    l_dict = dict(zip(list, [0]*list.size))
+    return [x not in l_dict for x in dfcol]
+
 '''
 Functions that get data from the lines dataframe
 '''
@@ -156,7 +173,11 @@ def player_prev_games(n, game_id, player_id, df_bs):
 
     # construct list of game ids and list of team ids a player played for
     game_list = df_games['GAME_ID'].values
-    player_teams = pd.unique(df_games['TEAM_ID'].values)
+
+    player_teams = set(df_games['TEAM_ID'].values.flat)  # convert to set for faster lookup with isin()
+
+    # experimental stuff
+    # player_teams = pd.unique(df_games['TEAM_ID'].values)
     # game_list = df_games.ix[:, 0].values
     # player_teams = list(pd.unique(df_games.ix[:, 1].values))
 
@@ -231,10 +252,9 @@ def populate_rosters(game_id, home_team_id, away_team_id, df_teams, df_bs):
     # home_query = query(cond, [home_prev_game, home_team_id])
     # away_query = query(cond, [away_prev_game, away_team_id])
 
-    # print home_prev_game, home_team_id
     # construct lists of player id values
-    df_home = df_bs[(df_bs['GAME_ID'].isin(home_prev_game)) & (df_bs['TEAM_ID'] == home_team_id)]
-    df_away = df_bs[(df_bs['GAME_ID'].isin(away_prev_game)) & (df_bs['TEAM_ID'] == away_team_id)]
+    df_home = df_bs[(df_bs['GAME_ID'] == home_prev_game[0]) & (df_bs['TEAM_ID'] == home_team_id)]
+    df_away = df_bs[(df_bs['GAME_ID'] == away_prev_game[0]) & (df_bs['TEAM_ID'] == away_team_id)]
     home_player_list = df_home['PLAYER_ID'].values
     away_player_list = df_away['PLAYER_ID'].values
     # home_player_list = df_bs.query(home_query).loc[:, 'PLAYER_ID'].values
@@ -447,6 +467,9 @@ def calc_team_opp_stats(game_list, player_teams, df_teams):
     df_games = df_teams[df_teams['GAME_ID'].isin(game_list)]
     df_team_stats = df_games[df_games['TEAM_ID'].isin(player_teams)]
     df_opp_stats = df_games[~df_games['TEAM_ID'].isin(player_teams)]
+    # df_games = df_teams[isin_list(df_teams['GAME_ID'], game_list)]
+    # df_team_stats = df_games[isin_list(df_games['TEAM_ID'], player_teams)]
+    # df_opp_stats = df_games[isnotin_list(df_games['TEAM_ID'], player_teams)]
 
     # df_prune = df_games.iloc[:, 5:].drop(['FG_PCT', 'FG3_PCT', 'FT_PCT'], axis=1)
 

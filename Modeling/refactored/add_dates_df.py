@@ -33,7 +33,11 @@ def load_dataframes(year):
 
     return df_lines, df_bs, df_teams
 
+
 def write_dataframes(df_bs, df_teams, year):
+    '''
+    write_dataframes: writes dataframes to hdf files
+    '''
     year_indicator = "%02d" % (year,)
     players_filepath = './data/bs' + year_indicator + '.h5'
     team_filepath = './data/tbs' + year_indicator + '.h5'
@@ -45,13 +49,26 @@ def write_dataframes(df_bs, df_teams, year):
 
 
 def move_last_column_to_first(df):
+    '''
+    Takes the last column of a dataframe and replaces it to the first column
+    '''
+
+    # get column header
     cols = df.columns.values.tolist()
+
+    # shift last element to first
     cols = cols[-1:] + cols[:-1]
+
+    # reorder dataframe based on new list of headers
     df = df[cols]
+
     return df
 
 
 def add_date_to_df(df_lines, df):
+    '''
+    add_date_to_df: Takes in df of line data (from OU file) and another dataframe. Adds in the date column from the line data at the end of the given dataframe.
+    '''
     df_dates = df_lines['Date']
     df = df.join(df_dates, on='GAME_ID')
     return df
@@ -60,25 +77,15 @@ def add_date_to_df(df_lines, df):
 if __name__ == "__main__":
     year = 3
 
-    for year in range(3, 15):
+    for year in range(3, 15):  # iterate through all seasons
         df_lines, df_bs, df_teams = load_dataframes(year)
 
-        print 'df_bs shape: '
-        print df_bs.shape
-        print 'df_teams shape: '
-        print df_teams.shape
-
+        # add dates to bs and team bs and re-order columns
         df_bs = add_date_to_df(df_lines, df_bs)
         df_teams = add_date_to_df(df_lines, df_teams)
         df_bs = move_last_column_to_first(df_bs)
         df_teams = move_last_column_to_first(df_teams)
 
-        print 'new df_bs shape: '
-        print df_bs.shape
-        print 'new df_teams shape: '
-        print df_teams.shape
-
-        print df_teams.tail()
-
+        # write dataframes to hdf files
         write_dataframes(df_bs, df_teams, year)
         print year
