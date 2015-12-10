@@ -18,7 +18,7 @@ def dict_column_sum(df_sum):
     '''
     dict_column_sum: helper function that sums the columns in a pandas dataframe and returns them to a dict
 
-    Note: Unused because slower than pd.sum(axis=0)
+    Note: Significantly faster than pd.sum(axis=0).to_dict() for league stats, but not for player stats. Not sure why
     '''
     stats_header = df_sum.columns.values.tolist()
     dict_sum = dict(zip(stats_header, [df_sum[col].values.sum(axis=0) for col in stats_header]))
@@ -30,12 +30,28 @@ def dict_column_avg(df_avg):
     '''
     dict_column_avg: helper function that averages the columns in a df and returns to a dict
 
-    Note: Significantly faster than pd.mean(axis=0)
+    Note: Significantly faster than pd.mean(axis=0), because the pandas mean function has performance issues when used on non-float datatypes
     '''
     stats_header = df_avg.columns.values.tolist()
     dict_avg = dict(zip(stats_header, [df_avg[col].values.mean(axis=0) for col in stats_header]))
 
+    print dict_avg
     return dict_avg
+
+
+def dict_avg(plyr_sum, num_games):
+    plyr_avg = {}
+    for key, value in plyr_sum.items():
+        plyr_avg[key] = value / num_games
+
+    plyr_avg['PLUS_MINUS'] = plyr_sum['PLUS_MINUS']
+
+    # adjust percentage stats to reflect actual percentages
+    plyr_avg['FG_PCT'] = 0.0 if (plyr_sum['FGA'] == 0) else (plyr_sum['FGM'] / plyr_sum['FGA'])
+    plyr_avg['FG3_PCT'] = 0.0 if (plyr_sum['FG3A'] == 0) else (plyr_sum['FG3M'] / plyr_sum['FG3A'])
+    plyr_avg['FT_PCT'] = 0.0 if (plyr_sum['FTA'] == 0) else (plyr_sum['FTM'] / plyr_sum['FTA'])
+
+    return plyr_avg
 
 
 def minutes(td):
@@ -131,7 +147,8 @@ def player_prev_games(n, game_id, player_id, df_bs):
 
     # construct list of game ids and list of team ids a player played for
     game_list = df_games['GAME_ID'].values
-    player_teams = df_games['TEAM_ID'].values.tolist()
+    player_teams = list(pd.unique(df_games['TEAM_ID'].values))
+
     return game_list, player_teams, df_games
 
 
@@ -163,6 +180,7 @@ def query_prev_games(df_bs, df_teams, game_id):
 
 '''
 Functions that load dataframes and get player lists to calculate stats for
+Note: python logic is faster than pd.query() for small dataframes
 '''
 
 
@@ -202,9 +220,14 @@ def populate_rosters(game_id, home_team_id, away_team_id, df_teams, df_bs):
     home_query = query(cond, [home_prev_game, home_team_id])
     away_query = query(cond, [away_prev_game, away_team_id])
 
+    # print home_prev_game, home_team_id
     # construct lists of player id values
-    home_player_list = df_bs.query(home_query).loc[:, 'PLAYER_ID'].values
-    away_player_list = df_bs.query(away_query).loc[:, 'PLAYER_ID'].values
+    df_home = df_bs[(df_bs['GAME_ID'].isin(home_prev_game)) & (df_bs['TEAM_ID'] == home_team_id)]
+    df_away = df_bs[(df_bs['GAME_ID'].isin(away_prev_game)) & (df_bs['TEAM_ID'] == away_team_id)]
+    home_player_list = df_home['PLAYER_ID'].values
+    away_player_list = df_away['PLAYER_ID'].values
+    # home_player_list = df_bs.query(home_query).loc[:, 'PLAYER_ID'].values
+    # away_player_list = df_bs.query(away_query).loc[:, 'PLAYER_ID'].values
 
     return home_player_list[:num_players], away_player_list[:num_players]
 
@@ -224,12 +247,11 @@ def calc_basic_stats(player_id, df_games):
 
     # sum and average columsn and write to dict
     plyr_sum = df_prune.sum(axis=0).to_dict()
-    plyr_avg = dict_column_avg(df_prune)  # using custom method for performance
 
-    # adjust percentage stats to reflect actual percentages
-    plyr_avg['FG_PCT'] = 0.0 if (plyr_sum['FGA'] == 0) else (plyr_sum['FGM'] / plyr_sum['FGA'])
-    plyr_avg['FG3_PCT'] = 0.0 if (plyr_sum['FG3A'] == 0) else (plyr_sum['FG3M'] / plyr_sum['FG3A'])
-    plyr_avg['FT_PCT'] = 0.0 if (plyr_sum['FTA'] == 0) else (plyr_sum['FTM'] / plyr_sum['FTA'])
+    plyr_avg = dict_avg(plyr_sum, len(df_prune.index))  # using custom method for performance
+
+
+    # add player id to sum dict
     plyr_sum['PLAYER_ID'] = player_id
 
     return plyr_sum, plyr_avg
@@ -240,7 +262,8 @@ def calc_league_stats(game_id, df_teams):
     calc_league_stats: calculates league stats based on all games played so far in a season. Returns a dict
     '''
     # sum dataframe columns and return a dict
-    league_sum = df_teams.iloc[:, 5:].sum(axis=0).to_dict()
+    # league_sum = df_teams.sum(axis=0).to_dict()
+    league_sum = dict_column_sum(df_teams)
 
     league_stats = {}
 
@@ -408,18 +431,21 @@ def calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats):
     return plyr_advanced
 
 
-def calc_team_stats(game_list, player_teams, df_teams):
+def calc_team_opp_stats(game_list, player_teams, df_teams):
     '''
     calc_team_stats: takes in a list of games, a list of teams that a player played on, and returns summed team stats over a given number of teams
     '''
-    df_games = df_teams[df_teams['GAME_ID'].isin(game_list) & df_teams['TEAM_ID'].isin(player_teams)]
+    df_games = df_teams[df_teams['GAME_ID'].isin(game_list)]
+    df_team_stats = df_games[df_games['TEAM_ID'].isin(player_teams)]
+    df_opp_stats = df_games[~df_games['TEAM_ID'].isin(player_teams)]
 
     # df_prune = df_games.iloc[:, 5:].drop(['FG_PCT', 'FG3_PCT', 'FT_PCT'], axis=1)
 
-    team_sum = df_games.sum(axis=0).to_dict()
+    team_sum = df_team_stats.sum(axis=0).to_dict()
+    opp_sum = df_opp_stats.sum(axis=0).to_dict()
     # team_sum = dict_column_sum(df_prune)
 
-    return team_sum
+    return team_sum, opp_sum
 
 
 def calc_opp_stats(game_list, player_teams, df_teams):
@@ -484,6 +510,8 @@ def iterate_player_list(player_list, team_id, game_id, df_bs, df_teams, league_s
     # init empty output lists
     roster_output = []
     error_output = []
+    team_histories = {}
+    opp_histories = {}
     for player_id in player_list: # iterate over players
         # get previous games by player
         player_game_list, player_teams, df_players = player_prev_games(history_steps, game_id, player_id, df_bs)
@@ -495,9 +523,16 @@ def iterate_player_list(player_list, team_id, game_id, df_bs, df_teams, league_s
         # sum and average player stats
         plyr_sum, plyr_avg = calc_basic_stats(player_id, df_players)
 
-        # calculate team and opponent stats
-        team_sum = calc_team_stats(player_game_list, player_teams, df_teams)
-        opp_sum = calc_opp_stats(player_game_list, player_teams, df_teams)
+        player_game_key = np.array_str(np.append(player_game_list, player_teams))
+
+        if player_game_key in team_histories:
+            team_sum, opp_sum = team_histories[player_game_key], opp_histories[player_game_key]
+        else:
+            # calculate team and opponent stats
+            team_sum, opp_sum = calc_team_opp_stats(player_game_list, player_teams, df_teams)
+            team_histories[player_game_key] = team_sum
+            opp_histories[player_game_key] = opp_sum
+        # opp_sum = calc_opp_stats(player_game_list, player_teams, df_teams)
 
         # calculate advanced stats
         plyr_advanced = calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats)
@@ -526,7 +561,7 @@ if __name__ == "__main__":
             # get team ids
             home_team_id, away_team_id = get_team_ids(row)
 
-            # filter dataframes to games previous to current one
+            # filter dataframes to games previous to current one to improve performance
             df_bs_prev, df_teams_prev = query_prev_games(df_bs, df_teams, game_id)
 
             # check that sufficient number of games played
