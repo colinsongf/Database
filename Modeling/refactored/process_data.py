@@ -139,8 +139,8 @@ def player_prev_games(n, game_id, player_id, df_bs):
     returns a list of game ids, a list of team ids the player played on in the last n games, and a dataframe of player boxscore data for those games
     '''
 
-    # query dataframe for games by player and minutes played > 0
-    df_games = df_bs[(df_bs['PLAYER_ID'] == player_id) & (df_bs['MIN'] > np.timedelta64(0))]
+    # filter dataframe for games by player
+    df_games = df_bs[(df_bs['PLAYER_ID'] == player_id)]
 
     # select last n games
     df_games = df_games.tail(n)
@@ -506,12 +506,16 @@ def history_met(game_id, team_games):
 def iterate_player_list(player_list, team_id, game_id, df_bs, df_teams, league_stats):
     '''
     iterate_player_list: calculates all stats for players in a player list
+    Returns an array of all stats, or an empty array if any player in the player list had zero previous games played
     '''
     # init empty output lists
     roster_output = []
     error_output = []
+
+    # temporary dicts to store data to avoid repeating queries
     team_histories = {}
     opp_histories = {}
+
     for player_id in player_list: # iterate over players
         # get previous games by player
         player_game_list, player_teams, df_players = player_prev_games(history_steps, game_id, player_id, df_bs)
@@ -523,15 +527,18 @@ def iterate_player_list(player_list, team_id, game_id, df_bs, df_teams, league_s
         # sum and average player stats
         plyr_sum, plyr_avg = calc_basic_stats(player_id, df_players)
 
-        player_game_key = np.array_str(np.append(player_game_list, player_teams))
+        # form a string to act as dict key for team histories
+        games_teams_key = np.array_str(np.append(player_game_list, player_teams))
 
-        if player_game_key in team_histories:
-            team_sum, opp_sum = team_histories[player_game_key], opp_histories[player_game_key]
-        else:
+        # check if team and opp sum have already been calculated
+        if games_teams_key in team_histories:  # if already calculated
+            # set team and opp sum to previously calculated stats
+            team_sum, opp_sum = team_histories[games_teams_key], opp_histories[games_teams_key]
+        else:  # if not already calculated
             # calculate team and opponent stats
             team_sum, opp_sum = calc_team_opp_stats(player_game_list, player_teams, df_teams)
-            team_histories[player_game_key] = team_sum
-            opp_histories[player_game_key] = opp_sum
+            team_histories[games_teams_key] = team_sum
+            opp_histories[games_teams_key] = opp_sum
         # opp_sum = calc_opp_stats(player_game_list, player_teams, df_teams)
 
         # calculate advanced stats
@@ -580,14 +587,17 @@ if __name__ == "__main__":
             # calculate league stats
             league_stats = calc_league_stats(game_id, df_teams_prev)
 
+            # filter boxscore df for min > 0 to improve query speed for stats calculations
+            df_bs_played = df_bs_prev[(df_bs_prev['MIN'] > np.timedelta64(0))]
+
             # iterate over player lists and calculate player stats
-            home_output = iterate_player_list(home_player_list, home_team_id, game_id, df_bs_prev, df_teams_prev, league_stats)
+            home_output = iterate_player_list(home_player_list, home_team_id, game_id, df_bs_played, df_teams_prev, league_stats)
 
             # skip if any players don't have a previous game
             if not home_output:
                 continue
 
-            away_output = iterate_player_list(away_player_list, away_team_id, game_id, df_bs_prev, df_teams_prev, league_stats)
+            away_output = iterate_player_list(away_player_list, away_team_id, game_id, df_bs_played, df_teams_prev, league_stats)
 
             # skip if any players don't have a previous game
             if not away_output:
