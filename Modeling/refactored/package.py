@@ -21,7 +21,7 @@ def set_globals():
     filepath = '/Users/' + username + '/Dropbox/Public/NBA_data/'
 
     # choose the years to run the script for, min_year of 3 starts from 2003
-    min_year, max_year = 3, 3
+    min_year, max_year = 11, 11
 
     # columns that should be string value
     str_cols = ['TEAM_ABBREVIATION', 'TEAM_CITY', 'PLAYER_NAME',

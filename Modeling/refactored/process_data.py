@@ -27,21 +27,21 @@ def load_dataframes(year):
 
 
 def player_prev_games(n, game_id, player_id, df_bs):
-    df_games = df_bs[(df_bs['PLAYER_ID'] == player_id) & (df_bs['GAME_ID'] < game_id)]
+    df_games = df_bs[(df_bs['PLAYER_ID'] == player_id) & (df_bs['MIN'] > np.timedelta64(0))]
 
-    # drop games with 0 minutes played and select last n games
-    df_games = df_games[df_games['MIN'] > np.timedelta64(0)].tail(n)
+    # select last n games
+    df_games = df_games.tail(n)
 
-    game_list = df_games.loc[:, 'GAME_ID'].values
-    player_teams = list(set(df_games.loc[:, 'TEAM_ID'].values))
+    game_list = df_games['GAME_ID'].values
+    player_teams = df_games['TEAM_ID'].values.tolist()
     return game_list, player_teams, df_games
 
 
 def team_prev_games(n, game_id, team_id, df_teams):
-    df_games = df_teams[(df_teams['TEAM_ID'] == team_id) & (df_teams['GAME_ID'] < game_id)]
+    df_games = df_teams[(df_teams['TEAM_ID'] == team_id)]
     df_games = df_games.tail(n)
 
-    game_list = df_games.loc[:, 'GAME_ID'].values
+    game_list = df_games['GAME_ID'].values
 
     return game_list
 
@@ -117,15 +117,24 @@ def populate_rosters(game_id, home_team_id, away_team_id, df_teams, df_bs):
     return home_player_list[:num_players], away_player_list[:num_players]
 
 
+def dict_column_sum(df_sum):
+    stats_header = df_sum.columns.values.tolist()
+    dict_sum = dict(zip(stats_header, [df_sum[col].values.sum(axis=0) for col in stats_header]))
+
+    return dict_sum
+
+
+def dict_column_avg(df_avg):
+    stats_header = df_avg.columns.values.tolist()
+    dict_avg = dict(zip(stats_header, [df_avg[col].values.mean(axis=0) for col in stats_header]))
+
+    return dict_avg
+
 def calc_basic_stats(player_id, df_games):
     df_prune = df_games.iloc[:, 8:]
-    df_sum = df_prune.sum(axis=0)
-    plyr_sum = dict(zip(dd.keys(), [[sum(item)] for item in dd.values()]))
-
-    plyr_sum = df_sum.to_dict()
-
-    df_avg = df_prune.mean(axis=0)
-    plyr_avg = df_avg.to_dict()
+    # plyr_sum = dict_column_sum(df_prune)
+    plyr_sum = df_prune.sum(axis=0).to_dict()
+    plyr_avg = dict_column_avg(df_prune)
 
     plyr_avg['FG_PCT'] = 0.0 if (plyr_sum['FGA'] == 0) else (plyr_sum['FGM'] / plyr_sum['FGA'])
     plyr_avg['FG3_PCT'] = 0.0 if (plyr_sum['FG3A'] == 0) else (plyr_sum['FG3M'] / plyr_sum['FG3A'])
@@ -136,22 +145,22 @@ def calc_basic_stats(player_id, df_games):
 
 
 def calc_league_stats(game_id, df_teams):
-    df_league_games = df_teams[df_teams['GAME_ID'] < game_id]
-    df_league_sum = df_league_games.iloc[:, 5:].sum(axis=0)
+    # df_league_games = df_teams[df_teams['GAME_ID'] < game_id]
+    league_sum = df_teams.iloc[:, 5:].sum(axis=0).to_dict()
 
     league_stats = {}
-    TM_FGA, TM_FTA = df_league_sum['FGA'], df_league_sum['FTA']
-    TM_FGM, TM_TOV = df_league_sum['FGM'], df_league_sum['TO']
-    TM_ORB, TM_DRB = df_league_sum['OREB'], df_league_sum['DREB']
+    TM_FGA, TM_FTA = league_sum['FGA'], league_sum['FTA']
+    TM_FGM, TM_TOV = league_sum['FGM'], league_sum['TO']
+    TM_ORB, TM_DRB = league_sum['OREB'], league_sum['DREB']
     OP_FGA, OP_FTA, OP_FGM, OP_ORB, OP_DRB, OP_TOV = TM_FGA, TM_FTA, TM_FGM, TM_ORB, TM_DRB, TM_TOV
 
     league_possessions = 0.5 * ((TM_FGA + 0.4 * TM_FTA - 1.07 * (TM_ORB / (TM_ORB + OP_DRB)) * (TM_FGA - TM_FGM) + TM_TOV) + (OP_FGA + 0.4 * OP_FTA - 1.07 * (OP_ORB / (OP_ORB + TM_DRB)) * (OP_FGA - OP_FGM) + OP_TOV))
 
-    num_games = len(df_league_games.index) / 2
-    league_stats['PPG'] = df_league_sum['PTS'] / num_games
-    league_stats['PACE'] = 48 * ((league_possessions * 2) / (2 * (minutes(df_league_sum['MIN']) / 5)))
+    num_games = len(df_teams.index) / 2
+    league_stats['PPG'] = league_sum['PTS'] / num_games
+    league_stats['PACE'] = 48 * ((league_possessions * 2) / (2 * (minutes(league_sum['MIN']) / 5)))
 
-    league_stats['PPS'] = df_league_sum['PTS'] / (df_league_sum['FGA'] + 0.44 * df_league_sum['FTA'])
+    league_stats['PPS'] = league_sum['PTS'] / (league_sum['FGA'] + 0.44 * league_sum['FTA'])
 
     return league_stats
 
@@ -304,19 +313,24 @@ def game_string(game_list):
 def calc_team_stats(game_list, player_teams, df_teams):
     df_games = df_teams[df_teams['GAME_ID'].isin(game_list) & df_teams['TEAM_ID'].isin(player_teams)]
 
-    df_prune = df_games.iloc[:, 5:].drop(['FG_PCT', 'FG3_PCT', 'FT_PCT'], axis=1)
-    df_team_sum = df_prune.sum(axis=0)
+    # df_prune = df_games.iloc[:, 5:].drop(['FG_PCT', 'FG3_PCT', 'FT_PCT'], axis=1)
 
-    return df_team_sum.to_dict()
+    team_sum = df_games.sum(axis=0).to_dict()
+    # team_sum = dict_column_sum(df_prune)
+
+    return team_sum
 
 
 def calc_opp_stats(game_list, player_teams, df_teams):
     df_games = df_teams[df_teams['GAME_ID'].isin(game_list) & ~df_teams['TEAM_ID'].isin(player_teams)]
 
-    df_prune = df_games.iloc[:, 5:].drop(['FG_PCT', 'FG3_PCT', 'FT_PCT'], axis=1)
-    df_opp_sum = df_prune.sum(axis=0)
+    # df_prune = df_games.iloc[:, 5:].drop(['FG_PCT', 'FG3_PCT', 'FT_PCT'], axis=1)
 
-    return df_opp_sum.to_dict()
+    # opp_sum = df_prune.sum(axis=0).to_dict()
+    opp_sum = df_games.sum(axis=0).to_dict()
+    # opp_sum = dict_column_sum(df_prune)
+
+    return opp_sum
 
 
 def calc_poss(team_sum, opp_sum):
@@ -353,6 +367,13 @@ def history_met(game_id, team_games):
     return True
 
 
+def query_prev_games(df_bs, df_teams, game_id):
+    df_bs_prev = df_bs[df_bs['GAME_ID'] < game_id]
+    df_teams_prev = df_teams[df_teams['GAME_ID'] < game_id]
+
+    return df_bs_prev, df_teams_prev
+
+
 def iterate_player_list(player_list, team_id, game_id, df_bs, df_teams, league_stats):
 
     roster_output = []
@@ -380,21 +401,25 @@ if __name__ == "__main__":
             if np.isnan(index):
                 continue
             home_team_id, away_team_id = get_team_ids(row)
-            team_games = min(len(team_prev_games(history_steps, game_id, home_team_id, df_teams)), len(team_prev_games(history_steps, game_id, away_team_id, df_teams)))
+            df_bs_prev, df_teams_prev = query_prev_games(df_bs, df_teams, game_id)
 
-            home_player_list, away_player_list = populate_rosters(game_id, home_team_id, away_team_id, df_teams, df_bs)
+            team_games = min(len(team_prev_games(history_steps, game_id, home_team_id, df_teams_prev)), len(team_prev_games(history_steps, game_id, away_team_id, df_teams_prev)))
 
             if (team_games < history_steps):
                 continue
+
+            home_player_list, away_player_list = populate_rosters(game_id, home_team_id, away_team_id, df_teams_prev, df_bs_prev)
+
+
             y, line = get_result(row)
             home_rest, away_rest = get_rest(row)
-            league_stats = calc_league_stats(game_id, df_teams)
+            league_stats = calc_league_stats(game_id, df_teams_prev)
 
-            home_output = iterate_player_list(home_player_list, home_team_id, game_id, df_bs, df_teams, league_stats)
+            home_output = iterate_player_list(home_player_list, home_team_id, game_id, df_bs_prev, df_teams_prev, league_stats)
 
             if not home_output:
                 continue
-            away_output = iterate_player_list(away_player_list, away_team_id, game_id, df_bs, df_teams, league_stats)
+            away_output = iterate_player_list(away_player_list, away_team_id, game_id, df_bs_prev, df_teams_prev, league_stats)
 
             if not away_output:
                 continue
