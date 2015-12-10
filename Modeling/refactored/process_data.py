@@ -3,6 +3,7 @@ import numpy as np
 import tables
 import math
 import time
+import timeit
 
 min_year, max_year = 3, 3  # years to iterate over ie 3, 14 means 2003-2014
 history_steps = 5  # num of games back to use for stats
@@ -31,7 +32,6 @@ def dict_column_sum(df_sum):
     '''
     stats_header = df_sum.columns.values.tolist()
     dict_sum = dict(zip(stats_header, [df_sum[col].values.sum(axis=0) for col in stats_header]))
-
     return dict_sum
 
 
@@ -156,7 +156,9 @@ def player_prev_games(n, game_id, player_id, df_bs):
 
     # construct list of game ids and list of team ids a player played for
     game_list = df_games['GAME_ID'].values
-    player_teams = list(pd.unique(df_games['TEAM_ID'].values))
+    player_teams = pd.unique(df_games['TEAM_ID'].values)
+    # game_list = df_games.ix[:, 0].values
+    # player_teams = list(pd.unique(df_games.ix[:, 1].values))
 
     return game_list, player_teams, df_games
 
@@ -250,7 +252,6 @@ def calc_basic_stats(player_id, df_games):
     '''
     calc_basic_stats: calculates sum and average of boxscore stats for a given player over a given dataframe. Returns 2 dicts
     '''
-
     # select out unwanted columns
     df_prune = df_games.iloc[:, 8:]
 
