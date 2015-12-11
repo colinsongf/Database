@@ -273,7 +273,7 @@ def calc_basic_stats(player_id, df_games):
     calc_basic_stats: calculates sum and average of boxscore stats for a given player over a given dataframe. Returns 2 dicts
     '''
     # select out unwanted columns
-    df_prune = df_games.iloc[:, 9:]
+    df_prune = df_games.iloc[:, 10:]
 
     # sum and average columsn and write to dict
     plyr_sum = df_prune.sum(axis=0).to_dict()
