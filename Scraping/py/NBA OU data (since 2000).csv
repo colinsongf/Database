@@ -19232,16 +19232,16 @@ Date,Link,Day,Season,Team,Opp,Site,Final,Rest,Line,Total,SUm,ATSm,OUm,DPS,DPA,SU
 42325,recap,Tue,2015,Knicks,Hornets,home,102-94,1&1,0,196.5,8,8,-0.5,3.8,-4.2,W,W,U,0,0021500162,20151117CHANYK,NYK,CHA
 42325,recap,Tue,2015,Pelicans,Nuggets,home,98-115,1&2,-6,206,-17,-23,7,-8,15,L,L,O,0,0021500163,20151117DENNOP,NOP,DEN
 42325,recap,Tue,2015,Warriors,Raptors,home,115-110,2&1,-9.5,208.5,5,-4.5,16.5,6,10.5,W,L,O,0,0021500164,20151117TORGSW,GSW,TOR
-42326,recap,Wed,2015,Hornets,Nets,home,,0&0,-6.5,195,,,,,,,,,,0021500165,20151118BKNCHA,CHA,BKN
-42326,recap,Wed,2015,Magic,Timberwolves,home,,3&0,-3,203,,,,,,,,,,0021500166,20151118MINORL,ORL,MIN
-42326,recap,Wed,2015,Seventysixers,Pacers,home,,1&1,7,192,,,,,,,,,,0021500167,20151118INDPHI,PHI,IND
-42326,recap,Wed,2015,Celtics,Mavericks,home,,1&1,-4.5,205.5,,,,,,,,,,0021500168,20151118DALBOS,BOS,DAL
-42326,recap,Wed,2015,Hawks,Kings,home,,0&2,-3.5,208.5,,,,,,,,,,0021500169,20151118SACATL,ATL,SAC
-42326,recap,Wed,2015,Rockets,Trailblazers,home,,1&1,-7,210,,,,,,,,,,0021500170,20151118PORHOU,HOU,POR
-42326,recap,Wed,2015,Thunder,Pelicans,home,,1&0,-11.5,211.5,,,,,,,,,,0021500171,20151118NOPOKC,OKC,NOP
-42326,recap,Wed,2015,Spurs,Nuggets,home,,1&0,-13.5,196,,,,,,,,,,0021500172,20151118DENSAS,SAS,DEN
-42326,recap,Wed,2015,Jazz,Raptors,home,,2&0,-4,189,,,,,,,,,,0021500173,20151118TORUTA,UTA,TOR
-42326,recap,Wed,2015,Suns,Bulls,home,,1&1,-2.5,203,,,,,,,,,,0021500174,20151118CHIPHX,PHX,CHI
+Nov 18 2015,recap,Wed,2015,Hornets,Nets,home,116-111,0&0,-6.5,196.0,5,-1.5,31.0,14.8,16.2,W,L,O,0,0021500165
+Nov 18 2015,recap,Wed,2015,Magic,Timberwolves,home,104-101,3&0,-4.0,204.0,3,-1.0,1.0,0.0,1.0,W,L,O,1,0021500166
+Nov 18 2015,recap,Wed,2015,Seventysixers,Pacers,home,85-112,1&1,7.5,191.5,-27,-19.5,5.5,-7.0,12.5,L,L,O,0,0021500167
+Nov 18 2015,recap,Wed,2015,Celtics,Mavericks,home,102-106,1&1,-4.5,207.0,-4,-8.5,1.0,-3.8,4.8,L,L,O,0,0021500168
+Nov 18 2015,recap,Wed,2015,Hawks,Kings,home,103-97,0&2,-3.5,208.5,6,2.5,-8.5,-3.0,-5.5,W,W,U,0,0021500169
+Nov 18 2015,recap,Wed,2015,Rockets,Trailblazers,home,108-103,1&1,-7.0,210.0,5,-2.0,1.0,-0.5,1.5,W,L,O,1,0021500170
+Nov 18 2015,recap,Wed,2015,Thunder,Pelicans,home,110-103,1&0,-10.0,212.0,7,-3.0,1.0,-1.0,2.0,W,L,O,0,0021500171
+Nov 18 2015,recap,Wed,2015,Spurs,Nuggets,home,109-98,1&0,-13.5,196.0,11,-2.5,11.0,4.2,6.8,W,L,O,0,0021500172
+Nov 18 2015,recap,Wed,2015,Jazz,Raptors,home,93-89,2&0,-4.0,189.0,4,0.0,-7.0,-3.5,-3.5,W,P,U,0,0021500173
+Nov 18 2015,recap,Wed,2015,Suns,Bulls,home,97-103,1&1,-2.5,203.0,-6,-8.5,-3.0,-5.8,2.8,L,L,U,0,0021500174
 Nov 19 2015,recap,Thu,2015,Heat,Kings,home,116-109,1&0,-8.0,203.0,7,-1.0,22.0,10.5,11.5,W,L,O,0,0021500175
 Nov 19 2015,recap,Thu,2015,Cavaliers,Bucks,home,115-100,1&1,-10.0,194.0,15,5.0,21.0,13.0,8.0,W,W,O,0,0021500176
 Nov 19 2015,recap,Thu,2015,Clippers,Warriors,home,117-124,4&1,7.0,213.0,-7,0.0,28.0,14.0,14.0,L,P,O,0,0021500177
@@ -19294,4 +19294,65 @@ Nov 25 2015,recap,Wed,2015,Thunder,Nets,home,110-99,1&2,-12.0,210.0,11,-1.0,-1.0
 Nov 25 2015,recap,Wed,2015,Spurs,Mavericks,home,88-83,1&0,-9.5,197.5,5,-4.5,-26.5,-15.5,-11.0,W,L,U,0,0021500224
 Nov 25 2015,recap,Wed,2015,Suns,Pelicans,home,114-120,1&2,-4.0,211.0,-6,-10.0,23.0,6.5,16.5,L,L,O,0,0021500225
 Nov 25 2015,recap,Wed,2015,Clippers,Jazz,home,91-102,0&1,-4.5,196.5,-11,-15.5,-3.5,-9.5,6.0,L,L,U,0,0021500226
-Nov 27 2015,recap,Fri,2015,Hornets,Cavaliers,home,,1&1,4.0,205.0,Nov 27 2015,recap,Fri,2015,Magic,Bucks,home,,1&1,-3.5,199.5,Nov 27 2015,recap,Fri,2015,Celtics,Wizards,home,,1&1,-3.0,210.5,Nov 27 2015,recap,Fri,2015,Knicks,Heat,home,,1&1,1.5,186.5,Nov 27 2015,recap,Fri,2015,Pacers,Bulls,home,,2&2,-3.5,199.0,Nov 27 2015,recap,Fri,2015,Rockets,Seventysixers,home,,1&1,-10.5,197.0,Nov 27 2015,recap,Fri,2015,Grizzlies,Hawks,home,,1&1,-3.0,195.5,Nov 27 2015,recap,Fri,2015,Thunder,Pistons,home,,1&1,-8.0,207.0,Nov 27 2015,recap,Fri,2015,Nuggets,Spurs,home,,2&1,8.0,195.0,Nov 27 2015,recap,Fri,2015,Suns,Warriors,home,,1&2,8.5,216.5,Nov 27 2015,recap,Fri,2015,Kings,Timberwolves,home,,1&1,-2.0,218.0,Nov 27 2015,recap,Fri,2015,Clippers,Pelicans,home,,1&1,-6.0,213.5,
+Nov 27 2015,recap,Fri,2015,Hornets,Cavaliers,home,90-95,1&1,4.0,205.0,-5,-1.0,-20.0,-10.5,-9.5,L,L,U,0,0021500227
+Nov 27 2015,recap,Fri,2015,Magic,Bucks,home,114-90,1&1,-3.5,199.5,24,20.5,4.5,12.5,-8.0,W,W,O,0,0021500228
+Nov 27 2015,recap,Fri,2015,Celtics,Wizards,home,111-78,1&1,-3.0,210.5,33,30.0,-21.5,4.2,-25.8,W,W,U,0,0021500229
+Nov 27 2015,recap,Fri,2015,Knicks,Heat,home,78-97,1&1,1.5,186.5,-19,-17.5,-11.5,-14.5,3.0,L,L,U,0,0021500230
+Nov 27 2015,recap,Fri,2015,Pacers,Bulls,home,104-92,2&2,-3.5,199.0,12,8.5,-3.0,2.8,-5.8,W,W,U,0,0021500231
+Nov 27 2015,recap,Fri,2015,Rockets,Seventysixers,home,116-114,1&1,-10.5,197.0,2,-8.5,33.0,12.2,20.8,W,L,O,0,0021500232
+Nov 27 2015,recap,Fri,2015,Grizzlies,Hawks,home,101-116,1&1,-3.0,195.5,-15,-18.0,21.5,1.8,19.8,L,L,O,0,0021500233
+Nov 27 2015,recap,Fri,2015,Thunder,Pistons,home,103-87,1&1,-8.0,207.0,16,8.0,-17.0,-4.5,-12.5,W,W,U,0,0021500234
+Nov 27 2015,recap,Fri,2015,Nuggets,Spurs,home,80-91,2&1,9.0,195.0,-11,-2.0,-24.0,-13.0,-11.0,L,L,U,0,0021500235
+Nov 27 2015,recap,Fri,2015,Suns,Warriors,home,116-135,1&2,8.5,216.5,-19,-10.5,34.5,12.0,22.5,L,L,O,0,0021500236
+Nov 27 2015,recap,Fri,2015,Kings,Timberwolves,home,91-101,1&1,-2.0,218.0,-10,-12.0,-26.0,-19.0,-7.0,L,L,U,0,0021500237
+Nov 27 2015,recap,Fri,2015,Clippers,Pelicans,home,111-90,1&1,-6.5,213.5,21,14.5,-12.5,1.0,-13.5,W,W,U,0,0021500238
+Nov 28 2015,recap,Sat,2015,Wizards,Raptors,home,82-84,0&2,3.0,202.5,-2,1.0,-36.5,-17.8,-18.8,L,W,U,0,0021500239
+Nov 28 2015,recap,Sat,2015,Cavaliers,Nets,home,90-88,0&2,-9.0,200.5,2,-7.0,-22.5,-14.8,-7.8,W,L,U,0,0021500240
+Nov 28 2015,recap,Sat,2015,Mavericks,Nuggets,home,92-81,2&0,-9.0,205.0,11,2.0,-32.0,-15.0,-17.0,W,W,U,0,0021500241
+Nov 28 2015,recap,Sat,2015,Spurs,Hawks,home,108-88,0&0,-7.5,193.0,20,12.5,3.0,7.8,-4.8,W,W,O,0,0021500242
+Nov 28 2015,recap,Sat,2015,Jazz,Pelicans,home,101-87,2&0,-6.5,196.0,14,7.5,-8.0,-0.2,-7.8,W,W,U,0,0021500243
+Nov 28 2015,recap,Sat,2015,Trailblazers,Lakers,home,108-96,3&3,-8.5,203.0,12,3.5,1.0,2.2,-1.2,W,W,O,0,0021500244
+Nov 28 2015,recap,Sat,2015,Warriors,Kings,home,120-101,0&0,-15.0,221.5,19,4.0,-0.5,1.8,-2.2,W,W,U,0,0021500245
+Nov 29 2015,recap,Sun,2015,Hornets,Bucks,home,87-82,1&1,-6.5,201.0,5,-1.5,-32.0,-16.8,-15.2,W,L,U,0,0021500246
+Nov 29 2015,recap,Sun,2015,Clippers,Timberwolves,home,107-99,1&1,-9.0,206.0,8,-1.0,0.0,-0.5,0.5,W,L,P,0,0021500247
+Nov 29 2015,recap,Sun,2015,Nets,Pistons,home,87-83,0&1,5.0,193.0,4,9.0,-23.0,-7.0,-16.0,W,W,U,0,0021500248
+Nov 29 2015,recap,Sun,2015,Magic,Celtics,home,110-91,1&1,1.5,202.0,19,20.5,-1.0,9.8,-10.8,W,W,U,0,0021500249
+Nov 29 2015,recap,Sun,2015,Raptors,Suns,home,102-107,0&1,-3.5,204.5,-5,-8.5,4.5,-2.0,6.5,L,L,O,0,0021500250
+Nov 29 2015,recap,Sun,2015,Grizzlies,Seventysixers,home,92-84,1&1,-12.5,193.0,8,-4.5,-17.0,-10.8,-6.2,W,L,U,0,0021500251
+Nov 29 2015,recap,Sun,2015,Knicks,Rockets,home,111-116,1&1,3.0,200.0,-5,-2.0,27.0,12.5,14.5,L,L,O,1,0021500252
+Nov 29 2015,recap,Sun,2015,Lakers,Pacers,home,103-107,0&1,10.0,202.0,-4,6.0,8.0,7.0,1.0,L,W,O,0,0021500253
+Nov 30 2015,recap,Mon,2015,Pistons,Rockets,home,116-105,0&0,-4.5,198.0,11,6.5,23.0,14.8,8.2,W,W,O,0,0021500254
+Nov 30 2015,recap,Mon,2015,Heat,Celtics,home,95-105,2&0,-4.5,194.0,-10,-14.5,6.0,-4.2,10.2,L,L,O,0,0021500255
+Nov 30 2015,recap,Mon,2015,Hawks,Thunder,home,106-100,1&2,2.0,211.5,6,8.0,-5.5,1.2,-6.8,W,W,U,0,0021500256
+Nov 30 2015,recap,Mon,2015,Bulls,Spurs,home,92-89,2&1,4.0,190.5,3,7.0,-9.5,-1.2,-8.2,W,W,U,0,0021500257
+Nov 30 2015,recap,Mon,2015,Bucks,Nuggets,home,92-74,0&1,-3.5,200.5,18,14.5,-34.5,-10.0,-24.5,W,W,U,0,0021500258
+Nov 30 2015,recap,Mon,2015,Jazz,Warriors,home,103-106,1&1,7.5,201.5,-3,4.5,7.5,6.0,1.5,L,W,O,0,0021500259
+Nov 30 2015,recap,Mon,2015,Kings,Mavericks,home,112-98,1&1,0.0,213.0,14,14.0,-3.0,5.5,-8.5,W,W,U,0,0021500260
+Nov 30 2015,recap,Mon,2015,Clippers,Trailblazers,home,102-87,0&1,-7.5,206.5,15,7.5,-17.5,-5.0,-12.5,W,W,U,0,0021500261
+Dec 01 2015,recap,Tue,2015,Cavaliers,Wizards,home,85-97,2&2,-8.5,203.0,-12,-20.5,-21.0,-20.8,-0.2,L,L,U,0,0021500262
+Dec 01 2015,recap,Tue,2015,Seventysixers,Lakers,home,103-91,1&1,-1.5,195.5,12,10.5,-1.5,4.5,-6.0,W,W,U,0,0021500263
+Dec 01 2015,recap,Tue,2015,Nets,Suns,home,94-91,1&1,3.0,207.0,3,6.0,-22.0,-8.0,-14.0,W,W,U,0,0021500264
+Dec 01 2015,recap,Tue,2015,Timberwolves,Magic,home,93-96,1&1,-1.5,202.0,-3,-4.5,-13.0,-8.8,-4.2,L,L,U,0,0021500265
+Dec 01 2015,recap,Tue,2015,Pelicans,Grizzlies,home,104-113,2&1,0.0,201.0,-9,-9.0,16.0,3.5,12.5,L,L,O,0,0021500266
+Dec 01 2015,recap,Tue,2015,Trailblazers,Mavericks,home,112-115,0&0,0.0,201.0,-3,-3.0,26.0,11.5,14.5,L,L,O,1,0021500267
+Dec 02 2015,recap,Wed,2015,Hornets,Warriors,home,99-116,2&1,9.0,210.0,-17,-8.0,5.0,-1.5,6.5,L,L,O,0,0021500268
+Dec 02 2015,recap,Wed,2015,Wizards,Lakers,home,104-108,0&0,-10.0,204.0,-4,-14.0,8.0,-3.0,11.0,L,L,O,0,0021500269
+Dec 02 2015,recap,Wed,2015,Pistons,Suns,home,127-122,1&0,-4.0,203.5,5,1.0,45.5,23.2,22.2,W,W,O,1,0021500270
+Dec 02 2015,recap,Wed,2015,Knicks,Seventysixers,home,99-87,2&0,-9.0,191.0,12,3.0,-5.0,-1.0,-4.0,W,W,U,0,0021500271
+Dec 02 2015,recap,Wed,2015,Hawks,Raptors,home,86-96,1&2,-3.5,196.5,-10,-13.5,-14.5,-14.0,-0.5,L,L,U,0,0021500272
+Dec 02 2015,recap,Wed,2015,Bulls,Nuggets,home,99-90,1&1,-9.5,197.0,9,-0.5,-8.0,-4.2,-3.8,W,L,U,0,0021500273
+Dec 02 2015,recap,Wed,2015,Rockets,Pelicans,home,108-101,1&0,-4.0,213.5,7,3.0,-4.5,-0.8,-3.8,W,W,U,0,0021500274
+Dec 02 2015,recap,Wed,2015,Spurs,Bucks,home,95-70,1&1,-12.0,188.0,25,13.0,-23.0,-5.0,-18.0,W,W,U,0,0021500275
+Dec 02 2015,recap,Wed,2015,Clippers,Pacers,home,91-103,1&2,0.0,203.0,-12,-12.0,-9.0,-10.5,1.5,L,L,U,0,0021500276
+Dec 03 2015,recap,Thu,2015,Heat,Thunder,home,97-95,2&2,3.5,203.0,2,5.5,-11.0,-2.8,-8.2,W,W,U,0,0021500277
+Dec 03 2015,recap,Thu,2015,Raptors,Nuggets,home,105-106,0&0,-10.0,193.0,-1,-11.0,18.0,3.5,14.5,L,L,O,0,0021500278
+Dec 03 2015,recap,Thu,2015,Jazz,Magic,home,94-103,2&1,-4.0,192.0,-9,-13.0,5.0,-4.0,9.0,L,L,O,0,0021500279
+Dec 03 2015,recap,Thu,2015,Grizzlies,Spurs,home,83-103,1&0,3.0,183.0,-20,-17.0,3.0,-7.0,10.0,L,L,O,0,0021500280
+Dec 03 2015,recap,Thu,2015,Trailblazers,Pacers,home,123-111,1&0,2.5,202.5,12,14.5,31.5,23.0,8.5,W,W,O,0,0021500281
+Dec 03 2015,recap,Thu,2015,Kings,Celtics,home,97-114,2&2,2.0,214.0,-17,-15.0,-3.0,-9.0,6.0,L,L,U,0,0021500282
+Dec 04 2015,recap,Fri,2015,Knicks,Nets,home,,1&2,-3.0,191.5,,,,,,,,,,0021500283
+Dec 04 2015,recap,Fri,2015,Wizards,Suns,home,,1&1,1.5,213.5,,,,,,,,,,0021500284
+Dec 04 2015,recap,Fri,2015,Pistons,Bucks,home,,1&1,-6.5,193.5,,,,,,,,,,0021500285
+Dec 04 2015,recap,Fri,2015,Hawks,Lakers,home,,1&1,-11.5,204.0,,,,,,,,,,0021500286
+Dec 04 2015,recap,Fri,2015,Mavericks,Rockets,home,,2&1,-5.0,210.5,,,,,,,,,,0021500287
+Dec 04 2015,recap,Fri,2015,Pelicans,Cavaliers,home,,1&2,4.5,208.0,,,,,,,,,,0021500288

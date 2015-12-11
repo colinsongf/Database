@@ -58,7 +58,7 @@ def write_game_json(gameid):
   print 'Game %s, shot chart' % gameid
   f = open('%s/json/shots_%s.json' % (DATAPATH, gameid), 'w')
   sc_params['GameID'] = gameid
-  sc_params['SeasonType'] = 'Playoffs'
+  #sc_params['SeasonType'] = 'Playoffs'
   sc = requests.get(sc_url, params=sc_params).json()['resultSets'][0]
   json.dump(sc, f)
   f.close()
