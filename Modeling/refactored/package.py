@@ -21,7 +21,7 @@ def set_globals():
     filepath = '/Users/' + username + '/Dropbox/Public/NBA_data/'
 
     # choose the years to run the script for, min_year of 3 starts from 2003
-    min_year, max_year = 3, 14
+    min_year, max_year = 1, 1
 
     # columns that should be string value
     str_cols = ['TEAM_ABBREVIATION', 'TEAM_CITY', 'PLAYER_NAME',
@@ -37,6 +37,34 @@ def get_lines():
     line_filepath = filepath + 'NBA OU data (since 2000).csv'
     df_lines = pd.read_csv(line_filepath, index_col='game_id')
     return df_lines
+
+
+def add_date_to_df(df_lines, df):
+    '''
+    add_date_to_df: Takes in df of line data (from OU file) and another dataframe. Adds in the date column from the line data at the end of the given dataframe.
+    '''
+    df_dates = df_lines['Date']
+    print df_dates
+    df = df.join(df_dates, on='GAME_ID')
+    print df
+    return df
+
+
+def move_last_column_to_first(df):
+    '''
+    Takes the last column of a dataframe and replaces it to the first column
+    '''
+
+    # get column header
+    cols = df.columns.values.tolist()
+
+    # shift last element to first
+    cols = cols[-1:] + cols[:-1]
+
+    # reorder dataframe based on new list of headers
+    df = df[cols]
+
+    return df
 
 
 # picks out relevant parts of boxscore and makes column datatypes
@@ -110,7 +138,7 @@ def add_game_bs(c, m):
 
 
 # forms a full pandas dataframe containing boxscore data
-def create_bs():
+def create_bs(df_lines):
     for c in range(min_year, max_year + 1):  # iterate through seasons of data
 
         # initialize pandas dataframe for team and player boxscores
@@ -128,8 +156,21 @@ def create_bs():
 
         # creating strings for output file naming
         year_indicator = "%02d" % (c,)
+        season_cond = '20' + year_indicator
         output_name = 'bs' + year_indicator + '.h5'
         team_output_name = 't' + output_name
+
+        # select lines data for current year
+        df_lines = df_lines[df_lines['Season'] == int(season_cond)]
+
+        # add date column to dataframe
+        df_bs, df_team_bs = add_date_to_df(df_lines, df_bs), add_date_to_df(df_lines, df_team_bs)
+        df_bs, df_team_bs = move_last_column_to_first(df_bs), move_last_column_to_first(df_team_bs)
+        print 'Added date column'
+
+        # add opp id column to dataframe
+        df_bs, df_team_bs = set_opp_id(df_bs), set_opp_id(df_team_bs)
+        print 'Added opponent ID column'
 
         # write to hdf file for storage
         df_bs.to_hdf(output_name, 'df_bs', format='table', mode='w',
@@ -194,12 +235,13 @@ def add_shots(c, m):
     return df_shots
 
 
-def create_shots():
+def create_shots(df_lines):
     for c in range(min_year, max_year + 1):  # iterate through seasons
 
         # initialize dataframe for shots data
         df_shots = init_shots(c)
         year_indicator = "%02d" % (c,)
+        season_cond = '20' + year_indicator
 
         for m in range(2, 1400):  # iterate through games within season
 
@@ -216,6 +258,18 @@ def create_shots():
             # print year and game number for progress tracking
             print year_indicator + ': ' + str(m)
 
+        # select lines data for current year
+        df_lines = df_lines[df_lines['Season'] == int(season_cond)]
+
+        # add date column to dataframe
+        df_shots = add_date_to_df(df_lines, df_shots)
+        df_shots = move_last_column_to_first(df_shots)
+        print 'Added date column'
+
+        # add opp id column to dataframe
+        df_shots = set_opp_id(df_shots)
+        print 'Added opponent id column'
+
         # naming output file
         output_name = 'shots' + year_indicator + '.h5'
 
@@ -223,12 +277,67 @@ def create_shots():
         df_shots.to_hdf(output_name, 'df_shots',
                         format='table', mode='w', complevel=6, complib='blosc')
 
+
+def set_opp_id(df):
+    dict_ids = create_dict_of_team_ids(df)
+    df['OPP_ID'] = df.apply(lambda row: determine_opp_id(df, row, dict_ids), axis=1)
+    df = put_opp_next_to_team(df)
+    return df
+
+
+def put_opp_next_to_team(df):
+    colnames = df.columns.values.tolist()
+    colnames.remove('OPP_ID')
+    opp_id_index = colnames.index('TEAM_ID') + 1
+    colnames.insert(opp_id_index, 'OPP_ID')
+    return df[colnames]
+
+
+def determine_opp_id(df, row, dict_ids):
+    game_id = row['GAME_ID']
+    curr_team_id = row['TEAM_ID']
+
+    both_teams = dict_ids[game_id]
+
+    if both_teams.size != 2:
+        print "ERROR"
+
+    opp_id = both_teams[0] if (both_teams[0] != curr_team_id) else both_teams[1]
+
+    return opp_id
+
+
+def create_dict_of_team_ids(df):
+    both_teams = {}
+    for game_id in pd.unique(df['GAME_ID'].values.tolist()):
+        df_curr = df[df['GAME_ID'] == game_id]
+        curr_teams = pd.unique(df_curr['TEAM_ID'].values)
+
+        if curr_teams.size != 2:
+            print "ERROR"
+        both_teams[game_id] = curr_teams
+
+    return both_teams
+
+
+def load_df_lines():
+    df_lines = get_lines()
+    df_lines = df_lines.convert_objects(convert_numeric=True)
+    df_lines.to_hdf('lines.h5', 'df_lines', format='table', mode='w', complevel=6, complib='blosc')
+    df_lines = df_lines[~np.isnan(df_lines.index.values)]
+
+    return df_lines
+
 ##############
 ###  MAIN  ###
 ##############
 
 if __name__ == "__main__":
     set_globals()
+    # df_lines = load_df_lines()
+    # create_shots(df_lines)
+    df_shots = pd.read_hdf('shots01.h5', 'df_shots')
+    print df_shots.head()
     # df_bs, df_team_bs = initialize_bs(3)
     # print df_bs.dtype
     # create_bs()
@@ -236,7 +345,6 @@ if __name__ == "__main__":
     # create_shots()  # run the script to create the shots data
     # df_shots = pd.read_hdf('shots03.h5', 'df_shots')  # reads hdf file into pandas df
     # print df_shots.head()  # prints first 5 rows of the dataframe
-    create_shots()
     #
     # print df_shots.tail()
     # df_lines = get_lines()
