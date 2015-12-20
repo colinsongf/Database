@@ -77,7 +77,7 @@ def add_date_to_df(df_lines, df):
 def write_df_shots(df_shots):
     year_indicator = "%02d" % (year,)
     shots_filepath = './data/shots' + year_indicator + '.h5'
-    
+
     df_shots.to_hdf(shots_filepath, 'df_shots', format='table', mode='w',
                  complevel=6, complib='blosc')
 
@@ -86,10 +86,8 @@ if __name__ == "__main__":
 
     for year in range(3, 15):  # iterate through all seasons
         df_lines, df_bs, df_teams, df_shots = load_dataframes(year)
-        print df_shots.shape
         df_shots = add_date_to_df(df_lines, df_shots)
         df_shots = move_last_column_to_first(df_shots)
-        print df_shots.shape
         write_df_shots(df_shots)
         # add dates to bs and team bs and re-order columns
         # df_bs = add_date_to_df(df_lines, df_bs)
