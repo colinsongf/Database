@@ -65,58 +65,9 @@ def dict_avg(plyr_sum, num_games):
 
 def minutes(td):
     '''
-    minutes: helper function that converts a timedelta object to minutes
+    minutes: helper function that converts a timedelta object to float minutes
     '''
     return td / np.timedelta64(1, 'm')
-
-'''
-Helper functions to construct strings
-'''
-
-
-def game_string(game_list):
-    '''
-    game_string: Helper function to make strings for pd.query()
-    Note: Stopped using pd.query() for the most part for performance reasons
-    '''
-    return '[' + ', '.join(map(str, game_list)) + ']'
-
-
-def query(conditions, values):
-    '''
-    query: helper function to help make a query string to feed into pd.query()
-    Note: Largely stopped using pd.query() for performance reasons
-    '''
-    length = len(conditions)
-
-    if len(conditions) != len(values):
-        return -1
-
-    queries = []
-    for b in range(0, length):
-        queries.append('(' + str(conditions[b]) + str(values[b]) + ')')
-
-        query_string = ' & '.join(queries)
-
-    return query_string
-
-
-def isin_list(dfcol, list):
-    '''
-    isin_list: Creates a list comprehension intended to see if elements of a dataframe column are in a given list.
-
-    Note: Faster than pd.isin() for small dataframes. But I'm avoiding its use for now because it'll only shave off 10 seconds and it's a lot less intuitive to read and write.
-    '''
-    l_dict = dict(zip(list, [0]*list.size))
-    return [x in l_dict for x in dfcol]
-
-
-def isnotin_list(dfcol, list):
-    '''
-    isnotin_list: Inverse of isin_list
-    '''
-    l_dict = dict(zip(list, [0]*list.size))
-    return [x not in l_dict for x in dfcol]
 
 '''
 Functions that get data from the lines dataframe
@@ -166,22 +117,18 @@ def player_prev_games(n, game_id, player_id, df_bs):
     '''
 
     # filter dataframe for games by player
-    df_games = df_bs[(df_bs['PLAYER_ID'] == player_id)]
+    df_games = df_bs.loc[player_id].tail(n)
 
-    # select last n games
-    df_games = df_games.tail(n)
+    # construct list of dates player played on
+    player_dates = df_games.index.get_level_values('Date')
 
-    # construct list of game ids and list of team ids a player played for
-    game_list = df_games['GAME_ID'].values
+    # construct team list of tuples for last n games: (TEAM_ID, date)
+    player_teams = zip(df_games['TEAM_ID'].values, player_dates)
 
-    player_teams = set(df_games['TEAM_ID'].values.flat)  # convert to set for faster lookup with isin()
+    # construct opp list of typles for last n games: (OPP_ID, date)
+    player_opps = zip(df_games['OPP_ID'].values, player_dates)
 
-    # experimental stuff
-    # player_teams = pd.unique(df_games['TEAM_ID'].values)
-    # game_list = df_games.ix[:, 0].values
-    # player_teams = list(pd.unique(df_games.ix[:, 1].values))
-
-    return game_list, player_teams, df_games
+    return player_dates, player_teams, player_opps, df_games
 
 
 def team_prev_games(n, game_id, team_id, df_teams):
@@ -204,9 +151,10 @@ def query_prev_games(df_bs, df_teams, game_date):
     '''
     query_prev_games: takes a dataframe of boxscore data for a season and returns a smaller dataframe of all previous games
     '''
+
     # query dataframes for game previous to current date
-    df_bs_prev = df_bs[df_bs['Date'] < game_date]
-    df_teams_prev = df_teams[df_teams['Date'] < game_date]
+    df_bs_prev = df_bs[df_bs.index.get_level_values('Date') < game_date]
+    df_teams_prev = df_teams[df_teams.index.get_level_values('Date') < game_date]
 
     return df_bs_prev, df_teams_prev
 
@@ -226,6 +174,7 @@ def load_dataframes(year):
     lines_filepath = './data/lines/lines.h5'
     players_filepath = './data/players/bs' + year_indicator + '.h5'
     team_filepath = './data/teams/tbs' + year_indicator + '.h5'
+    # inactives_filepath = './data/inactives/inactives' + year_indicator + '/h5'
 
     # read in lines data and limit to current season
     df_lines = pd.read_hdf(lines_filepath, 'df_lines')
@@ -234,8 +183,9 @@ def load_dataframes(year):
     # load team and player boxscores
     df_bs = pd.read_hdf(players_filepath, 'df_bs')
     df_teams = pd.read_hdf(team_filepath, 'df_team_bs')
+    # df_inactives = pd.read_hdf(inactives_filepath, 'df_inactives')
 
-    return df_lines, df_bs, df_teams
+    return df_lines, df_bs, df_teams  # , df_inactives
 
 
 def populate_rosters(game_id, home_team_id, away_team_id, df_teams, df_bs):
@@ -272,8 +222,9 @@ def calc_basic_stats(player_id, df_games):
     '''
     calc_basic_stats: calculates sum and average of boxscore stats for a given player over a given dataframe. Returns 2 dicts
     '''
+
     # select out unwanted columns
-    df_prune = df_games.iloc[:, 10:]
+    df_prune = df_games.iloc[:, 8:]
 
     # sum and average columsn and write to dict
     plyr_sum = df_prune.sum(axis=0).to_dict()
@@ -306,7 +257,7 @@ def calc_league_stats(game_id, df_teams):
 
     num_games = len(df_teams.index) / 2
     league_stats['PPG'] = league_sum['PTS'] / num_games
-    league_stats['PACE'] = 48 * ((league_possessions * 2) / (2 * (minutes(league_sum['MIN']) / 5)))
+    league_stats['PACE'] = 48 * ((league_possessions * 2) / (2 * (league_sum['MIN'] / 5)))
 
     league_stats['PPS'] = league_sum['PTS'] / (league_sum['FGA'] + 0.44 * league_sum['FTA'])
 
@@ -317,25 +268,25 @@ def calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats):
     '''
     calc_advanced_stats: calculates all advanced stats based on the sum stats of a player, player's teams, and player's opponents. Returns a dict
     '''
-    # initialize vars for easier formulas, cast to float for division
-    TM_MP, OP_MP = minutes(team_sum['MIN']), minutes(opp_sum['MIN'])
+    # initialize vars for easier formulas
+    TM_MP, OP_MP = team_sum['MIN'], opp_sum['MIN']
 
-    TM_FGA, TM_FTA = float(team_sum['FGA']), float(team_sum['FTA'])
-    TM_FGM, TM_FTM = float(team_sum['FGM']), float(team_sum['FTM'])
-    TM_3PA, TM_3PM = float(team_sum['FG3A']), float(team_sum['FG3M'])
-    TM_ORB, TM_DRB = float(team_sum['OREB']), float(team_sum['DREB'])
-    TM_FGM, TM_TOV = float(team_sum['FGM']), float(team_sum['TO'])
+    TM_FGA, TM_FTA = team_sum['FGA'], team_sum['FTA']
+    TM_FGM, TM_FTM = team_sum['FGM'], team_sum['FTM']
+    TM_3PA, TM_3PM = team_sum['FG3A'], team_sum['FG3M']
+    TM_ORB, TM_DRB = team_sum['OREB'], team_sum['DREB']
+    TM_FGM, TM_TOV = team_sum['FGM'], team_sum['TO']
     TM_AST, TM_BLK = team_sum['AST'], team_sum['BLK']
     TM_STL, TM_PF = team_sum['STL'], team_sum['PF']
     TM_PTS = team_sum['PTS']
     TM_PACE = calc_pace(team_sum, opp_sum)
     TM_POS = calc_poss(team_sum, opp_sum)
 
-    OP_FGA, OP_FTA = float(opp_sum['FGA']), float(opp_sum['FTA'])
-    OP_FGM, OP_FTM = float(opp_sum['FGM']), float(opp_sum['FTM'])
-    OP_3PA, OP_3PM = float(opp_sum['FG3A']), float(opp_sum['FG3M'])
-    OP_ORB, OP_DRB = float(opp_sum['OREB']), float(opp_sum['DREB'])
-    OP_FGM, OP_TOV = float(opp_sum['FGM']), float(opp_sum['TO'])
+    OP_FGA, OP_FTA = opp_sum['FGA'], opp_sum['FTA']
+    OP_FGM, OP_FTM = opp_sum['FGM'], opp_sum['FTM']
+    OP_3PA, OP_3PM = opp_sum['FG3A'], opp_sum['FG3M']
+    OP_ORB, OP_DRB = opp_sum['OREB'], opp_sum['DREB']
+    OP_FGM, OP_TOV = opp_sum['FGM'], opp_sum['TO']
     OP_AST, OP_BLK = opp_sum['AST'], opp_sum['BLK']
     OP_STL, OP_PF = opp_sum['STL'], opp_sum['PF']
     OP_PTS = team_sum['PTS']
@@ -344,9 +295,6 @@ def calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats):
 
     # initialize output dictionary with player id
     plyr_advanced = {'PLAYER_ID': plyr_sum['PLAYER_ID']}
-
-    # convert minutes from Timedelta to minutes format
-    plyr_sum['MIN'] = minutes(plyr_sum['MIN'])
 
     # adv stat: true shot percentage
     if plyr_sum['FGA'] + plyr_sum['FTA'] == 0.0:
@@ -460,13 +408,16 @@ def calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats):
     return plyr_advanced
 
 
-def calc_team_opp_stats(game_list, player_teams, df_teams):
+def calc_team_opp_stats(player_opps, player_teams, df_teams):
     '''
     calc_team_stats: takes in a list of games, a list of teams that a player played on, and returns summed team stats over a given number of teams
     '''
-    df_games = df_teams[df_teams['GAME_ID'].isin(game_list)]
-    df_team_stats = df_games[df_games['TEAM_ID'].isin(player_teams)]
-    df_opp_stats = df_games[~df_games['TEAM_ID'].isin(player_teams)]
+    df_team_stats = df_teams.loc[player_teams]
+    df_opp_stats = df_teams.loc[player_opps]
+
+    # df_games = df_teams[df_teams['GAME_ID'].isin(game_list)]
+    # df_team_stats = df_games[df_games['TEAM_ID'].isin(player_teams)]
+    # df_opp_stats = df_games[~df_games['TEAM_ID'].isin(player_teams)]
     # df_games = df_teams[isin_list(df_teams['GAME_ID'], game_list)]
     # df_team_stats = df_games[isin_list(df_games['TEAM_ID'], player_teams)]
     # df_opp_stats = df_games[isnotin_list(df_games['TEAM_ID'], player_teams)]
@@ -478,22 +429,6 @@ def calc_team_opp_stats(game_list, player_teams, df_teams):
     # team_sum = dict_column_sum(df_prune)
 
     return team_sum, opp_sum
-
-
-def calc_opp_stats(game_list, player_teams, df_teams):
-    '''
-    calc_opp_stats: takes in a list of games, a list of teams that a player played on, and returns summed opponent stats over a given number of teams
-    '''
-    # query games that a player played in but wasn't their team id
-    df_games = df_teams[df_teams['GAME_ID'].isin(game_list) & ~df_teams['TEAM_ID'].isin(player_teams)]
-
-    # df_prune = df_games.iloc[:, 5:].drop(['FG_PCT', 'FG3_PCT', 'FT_PCT'], axis=1)
-
-    # opp_sum = df_prune.sum(axis=0).to_dict()
-    opp_sum = df_games.sum(axis=0).to_dict()
-    # opp_sum = dict_column_sum(df_prune)
-
-    return opp_sum
 
 
 def calc_poss(team_sum, opp_sum):
@@ -519,23 +454,47 @@ def calc_pace(team_sum, opp_sum):
     '''
     TM_POS = calc_poss(team_sum, opp_sum)
     OP_POS = calc_poss(opp_sum, team_sum)
-    TM_MP = minutes(team_sum['MIN'])
+    TM_MP = team_sum['MIN']
     pace = 48 * ((TM_POS + OP_POS) / (2 * (TM_MP / 5)))
 
     return pace
 
 
-def history_met(game_id, team_games):
-    '''
-    history_met: supposedly checks if history requirements met but haven't been using this correctly
-    '''
-    if (team_games < history_steps):  # check that team has played enough games
-        return False
+def create_player_lists(df_bs, df_teams):
 
-    return True
+    # take out nan dates, ie games that aren't in the OU data
+    df_bs = df_bs[~np.isnan(df_bs['Date'])]
+    # df_inactives = df_inactives[~np.isnan(df_inactives['Date'])]
+
+    # index teams bs on team id and date for easier access
+    df_teams = df_teams.set_index(['TEAM_ID', 'Date']).sort_index()
+
+    # create dataframes with players who DND and NWT
+    df_dnd = df_bs[df_bs['COMMENT'].str.contains('DND', na=False)]
+    df_without_dnd = df_bs[~df_bs['COMMENT'].str.contains('DND', na=False)]
+    df_nwt = df_without_dnd[df_without_dnd['COMMENT'].str.contains('NWT', na=False)]
+
+    # initialize empty lists for each column
+    df_teams['PLAYER_IDS'] = np.empty((len(df_teams), 0)).tolist()
+    # df_teams['INACTIVE_IDS'] = np.empty((len(df_teams), 0)).tolist()
+    df_teams['DND_IDS'] = np.empty((len(df_teams), 0)).tolist()
+
+    # populate list with all player IDs in boxscore
+    df_bs.apply((lambda row: df_teams.at[(row['TEAM_ID'], row['Date']), 'PLAYER_IDS'].append(row['PLAYER_ID'])), axis=1)
+
+    # populate list with all player IDs who DND
+    df_dnd.apply((lambda row: df_teams.at[(row['TEAM_ID'], row['Date']), 'DND_IDS'].append(row['PLAYER_ID'])), axis=1)
+
+    # populate list with all player IDs who were NWT
+    df_nwt.apply((lambda row: df_teams.at[(row['TEAM_ID'], row['Date']), 'DND_IDS'].append(row['PLAYER_ID'])), axis=1)
+
+    # populate list with all inactive players
+    # df_inactives.apply((lambda row: df_teams.at[(row['TEAM_ID'], row['Date']), 'INACTIVE_IDS'].append(row['PLAYER_ID'])), axis=1)
+
+    return df_teams
 
 
-def iterate_player_list(player_list, team_id, game_id, df_bs, df_teams, league_stats):
+def iterate_player_list(player_list, inactive_list, team_id, game_id, df_bs, df_teams, league_stats):
     '''
     iterate_player_list: calculates all stats for players in a player list
     Returns an array of all stats, or an empty array if any player in the player list had zero previous games played
@@ -550,37 +509,50 @@ def iterate_player_list(player_list, team_id, game_id, df_bs, df_teams, league_s
 
     for player_id in player_list:  # iterate over players
         # get previous games by player
-        player_game_list, player_teams, df_players = player_prev_games(history_steps, game_id, player_id, df_bs)
+        player_dates, player_teams, player_opps, df_players = player_prev_games(history_steps, game_id, player_id, df_bs)
 
         # if no previous games for a player, quit loop and return error
-        if not player_game_list.size:
+        if not player_dates.size:
             return error_output
 
         # sum and average player stats
         plyr_sum, plyr_avg = calc_basic_stats(player_id, df_players)
 
         # form a string to act as dict key for team histories
-        games_teams_key = np.array_str(np.append(player_game_list, player_teams))
+        games_teams_key = str(player_teams).strip('[]')
+        games_opps_key = str(player_opps).strip('[]')
 
         # check if team and opp sum have already been calculated
         if games_teams_key in team_histories:  # if already calculated
             # set team and opp sum to previously calculated stats
-            team_sum, opp_sum = team_histories[games_teams_key], opp_histories[games_teams_key]
+            team_sum, opp_sum = team_histories[games_teams_key], opp_histories[games_opps_key]
         else:  # if not already calculated
             # calculate team and opponent stats
-            team_sum, opp_sum = calc_team_opp_stats(player_game_list, player_teams, df_teams)
+            team_sum, opp_sum = calc_team_opp_stats(player_opps, player_teams, df_teams)
             team_histories[games_teams_key] = team_sum
-            opp_histories[games_teams_key] = opp_sum
-        # opp_sum = calc_opp_stats(player_game_list, player_teams, df_teams)
+            opp_histories[games_opps_key] = opp_sum
 
         # calculate advanced stats
         plyr_advanced = calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats)
 
-        # add data to final output
-        roster_output.append(plyr_avg.values())
-        roster_output.append(plyr_advanced.values())
+        # mark if active or inactive for current game
+        if player_id in inactive_list:
+            plyr_avg['ACTIVE'] = 0
+        else:
+            plyr_avg['ACTIVE'] = 1
 
-    return roster_output
+        # combine dicts
+        plyr_avg.update(plyr_advanced)
+
+        # add data to final output
+        roster_output.append(plyr_avg)
+
+    # sort by minutes played
+    roster_output = sorted(roster_output, key=lambda k: k['MIN'])
+
+    # take the first n players and return value
+    return roster_output[:num_players]
+
 
 if __name__ == "__main__":
     start_time = time.time()  # timer function
@@ -590,8 +562,16 @@ if __name__ == "__main__":
         # load data into dataframes
         df_lines, df_bs, df_teams = load_dataframes(year)
 
+        df_player_lists = create_player_lists(df_bs, df_teams)
+
+        df_bs.set_index(['PLAYER_ID', 'Date'], inplace=True)
+        df_bs.sort_index(inplace=True)
+        df_teams.set_index(['TEAM_ID', 'Date'], inplace=True)
+        df_teams.sort_index(inplace=True)
+
         for index, row in df_lines.iterrows():  # iterate over games
             game_id = index
+            game_date = row['Date']
 
             # skip if playoff game
             if np.isnan(index):
@@ -601,16 +581,13 @@ if __name__ == "__main__":
             home_team_id, away_team_id = get_team_ids(row)
 
             # filter dataframes to games previous to current date to improve performance
-            df_bs_prev, df_teams_prev = query_prev_games(df_bs, df_teams, row['Date'])
+            df_bs_prev, df_teams_prev = query_prev_games(df_bs, df_teams, game_date)
 
             # check that sufficient number of games played
-            team_games = min(len(team_prev_games(history_steps, game_id, home_team_id, df_teams_prev)), len(team_prev_games(history_steps, game_id, away_team_id, df_teams_prev)))
+            team_games = min(len(df_teams_prev.loc[home_team_id].index), len(df_teams_prev.loc[away_team_id].index))
 
             if (team_games < history_steps):
                 continue
-
-            # get player lists from previous boxscore
-            home_player_list, away_player_list = populate_rosters(game_id, home_team_id, away_team_id, df_teams_prev, df_bs_prev)
 
             # get line and result data
             y, line = get_result(row)
@@ -619,17 +596,23 @@ if __name__ == "__main__":
             # calculate league stats
             league_stats = calc_league_stats(game_id, df_teams_prev)
 
-            # filter boxscore df for min > 0 to improve query speed for stats calculations
-            df_bs_played = df_bs_prev[(df_bs_prev['MIN'] > np.timedelta64(0))]
+            # get player lists from current game boxscore
+            home_player_list, away_player_list = df_player_lists.at[(home_team_id, game_date), 'PLAYER_IDS'], df_player_lists.at[(away_team_id, game_date), 'PLAYER_IDS']
+
+            # get DND/NWT list from current boxscore
+            home_inactive_list, away_inactive_list = df_player_lists.at[(home_team_id, game_date), 'DND_IDS'], df_player_lists.at[(away_team_id, game_date), 'DND_IDS']
+
+            # filter boxscore df for min > 0 to include only active players
+            df_bs_played = df_bs_prev[(df_bs_prev['MIN'] > 0)]
 
             # iterate over player lists and calculate player stats
-            home_output = iterate_player_list(home_player_list, home_team_id, game_id, df_bs_played, df_teams_prev, league_stats)
+            home_output = iterate_player_list(home_player_list, home_inactive_list, home_team_id, game_id, df_bs_played, df_teams_prev, league_stats)
 
             # skip if any players don't have a previous game
             if not home_output:
                 continue
 
-            away_output = iterate_player_list(away_player_list, away_team_id, game_id, df_bs_played, df_teams_prev, league_stats)
+            away_output = iterate_player_list(away_player_list, away_inactive_list, away_team_id, game_id, df_bs_played, df_teams_prev, league_stats)
 
             # skip if any players don't have a previous game
             if not away_output:
