@@ -6,8 +6,9 @@ import time
 import timeit
 import collections
 import pickle
+import sys
 
-min_year, max_year = 3, 14  # years to iterate over ie 3, 14 means 2003-2014
+min_year, max_year = 3, 3  # years to iterate over ie 3, 14 means 2003-2014
 history_steps = 5  # num of games back to use for stats
 min_player_games = 1  # num of games each player has to play at minimum
 num_players = 9  # number of players to use from roster
@@ -197,10 +198,10 @@ def calc_sum_avg_stats(df_bs, df_teams):
         df_player = df_player.select_dtypes(include=[np.float64])
 
         # calculates rolling sum over given history window
-        df_sums = pd.rolling_sum(df_player, window=history_steps, min_periods=min_player_games+1)
+        df_sums = pd.rolling_sum(df_player, window=history_steps, min_periods=min_player_games)
 
         # calculates rolling average over given history window
-        df_avg = pd.rolling_mean(df_player, window=history_steps, min_periods=min_player_games+1)
+        df_avg = pd.rolling_mean(df_player, window=history_steps, min_periods=min_player_games)
 
         # get list of column labels
         colnames = df_sums.columns.values.tolist()
@@ -217,8 +218,8 @@ def calc_sum_avg_stats(df_bs, df_teams):
         df_opp = df_teams_float.loc[zip(player_opp_list[player_id], player_bs_dates[player_id])]
 
         # calculate rolling sum for team and opp stats
-        df_team_sum = pd.rolling_sum(df_team, window=history_steps, min_periods=min_player_games+1)
-        df_opp_sum = pd.rolling_sum(df_opp, window=history_steps, min_periods=min_player_games+1)
+        df_team_sum = pd.rolling_sum(df_team, window=history_steps, min_periods=min_player_games)
+        df_opp_sum = pd.rolling_sum(df_opp, window=history_steps, min_periods=min_player_games)
 
         # get column labels
         colnames = df_team_sum.columns.values.tolist()
@@ -551,7 +552,7 @@ def calc_player_shots(df_bs, df_player_xefg):
         player_shots_dates[player_id] = df_curr_player.index.values
 
         # calculate rolling sum over given history window for current player
-        df_xefg_sum = pd.rolling_sum(df_curr_player, window=history_steps, min_periods=min_player_games + 1)
+        df_xefg_sum = pd.rolling_sum(df_curr_player, window=history_steps, min_periods=min_player_games)
 
         for zone in shot_zones:
             # calculate pps over summed window
@@ -695,8 +696,9 @@ def form_player_vars(home_output, away_output):
 def form_game_vars(row, game_id):
     home_rest, away_rest = get_rest(row)
     y, line = get_result(row)
-    game_vars = [home_rest, away_rest, line, y, game_id]
-    game_vars_header = ['home_REST', 'away_REST', 'LINE', 'y', 'GAME_ID']
+    home_team_id, away_team_id = get_team_ids(row)
+    game_vars = [home_rest, away_rest, line, y, game_id, home_team_id, away_team_id]
+    game_vars_header = ['home_REST', 'away_REST', 'LINE', 'y', 'GAME_ID', 'home_team', 'away_team']
 
     return game_vars, game_vars_header
 
@@ -882,6 +884,9 @@ if __name__ == "__main__":
 
             # append our final row to our header
             final_data.append(final_row)
+
+            # print 'GAME ID: {}\r'.format(game_id),
+            # sys.stdout.flush()
 
         print "Processing complete for season 20" + "%02d" % (year,)
 
