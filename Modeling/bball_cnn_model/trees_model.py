@@ -206,7 +206,7 @@ def test_model(x_test, y_test, g_test, l_test, h_test, a_test, running_mode):
         for element in temp_prediction_list:
             del element['predicted_category_2']
             del element['predicted_p_2']
-            element['how_to_bet'] = 'home team covers' if element['predicted_category_1'] == 1 else 'home team fails to cover'
+            element['how_to_bet'] = 'home team covers' if element['predicted_category_1'] == 1 else 'away team covers'
             f_easy_record.write(str(element).replace('\n','') + '\n\n')
         f_easy_record.close()
 
