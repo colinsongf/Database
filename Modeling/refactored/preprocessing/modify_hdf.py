@@ -91,13 +91,20 @@ def write_df_teams(df_teams, year):
                  complevel=6, complib='blosc')
 
 
+def write_dataframe(df, name):
+    filepath = './data/temp/' + name + '.h5'
+    table_name = 'df_' + name
+    df.to_hdf(filepath, table_name, format='table', mode='w', complevel=6, complib='blosc')
+
+
 if __name__ == "__main__":
 
-    for year in range(3, 15):  # iterate through all seasons
+    for year in range(12, 13):  # iterate through all seasons
         df_lines, df_bs, df_teams, df_shots = load_dataframes(year)
-        df_teams.iloc[:, 8:] = df_teams.iloc[:, 8:].astype(float)
-        df_teams['MIN'] = df_teams['MIN'] / np.timedelta64(1, 'm')
-        df_bs['MIN'] = df_bs['MIN'] / np.timedelta64(1, 'm')
+        print df_bs.dtypes
+        df_bs['GAME_ID'] = df_bs['GAME_ID'].astype(int)
+        df_bs['TEAM_ID'] = df_bs['TEAM_ID'].astype(int)
+        df_bs['OPP_ID'] = df_bs['OPP_ID'].astype(int)
         # write dataframes to hdf files
-        write_dataframes(df_bs, df_teams, year)
+        write_dataframe(df_bs, 'bs')
         print year

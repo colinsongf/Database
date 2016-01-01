@@ -8,12 +8,12 @@ import collections
 import pickle
 import sys
 
-min_year, max_year = 3, 3  # years to iterate over ie 3, 14 means 2003-2014
-history_steps = 5  # num of games back to use for stats
+min_year, max_year = 3, 13  # years to iterate over ie 3, 14 means 2003-2014
+history_steps = 8  # num of games back to use for stats
 min_player_games = 1  # num of games each player has to play at minimum
 num_players = 9  # number of players to use from roster
 shot_zones = ['atb3', 'c3', 'mid', 'ra', 'paint']  # zones in xefg data
-player_sizes = ['big', 'small']  # sizes in xefg data
+player_sizes = ['all', 'small']  # sizes in xefg data
 
 '''
 Helper functions for numeric options on pandas dataframes for performance reasons
@@ -41,10 +41,11 @@ def get_result(row):
     get_result: gets the line and ATS result from the lines df
     '''
     y = 1 if row['ATSr'] == 'W' else 0
+    push = 1 if row['ATSr'] == 'P' else 0
 
     line = float(row['Line'])
 
-    return y, line
+    return y, push, line
 
 
 def get_rest(row):
@@ -291,11 +292,11 @@ def calc_advanced_stats(plyr_sum, team_sum, opp_sum, player_id, league_stats):
     # OP_PACE = calc_pace(opp_sum, team_sum)
 
     # initialize output dictionary with player id
-    plyr_advanced = {'PLAYER_ID': player_id}
+    # plyr_advanced = {'PLAYER_ID': player_id}
+    plyr_advanced = {}
 
     # adv stat: possession and pace
     plyr_advanced['PACE'] = TM_PACE
-    plyr_advanced['POSS_TOTAL'] = TM_POS
 
     # adv stat: true shot percentage
     if plyr_sum['FGA'] + plyr_sum['FTA'] == 0.0:
@@ -695,10 +696,10 @@ def form_player_vars(home_output, away_output):
 
 def form_game_vars(row, game_id):
     home_rest, away_rest = get_rest(row)
-    y, line = get_result(row)
+    y, push, line = get_result(row)
     home_team_id, away_team_id = get_team_ids(row)
-    game_vars = [home_rest, away_rest, line, y, game_id, home_team_id, away_team_id]
-    game_vars_header = ['home_REST', 'away_REST', 'LINE', 'y', 'GAME_ID', 'home_team', 'away_team']
+    game_vars = [home_rest, away_rest, line, push, y, game_id, home_team_id, away_team_id]
+    game_vars_header = ['home_REST', 'away_REST', 'LINE', 'PUSH', 'y', 'game_id', 'home_team', 'away_team']
 
     return game_vars, game_vars_header
 
@@ -841,10 +842,6 @@ if __name__ == "__main__":
             if (team_games < history_steps):
                 continue
 
-            # get line and result data
-            y, line = get_result(row)
-            home_rest, away_rest = get_rest(row)
-
             # calculate league stats
             league_stats = calc_league_stats(game_id, df_teams_prev)
 
@@ -888,15 +885,23 @@ if __name__ == "__main__":
             # print 'GAME ID: {}\r'.format(game_id),
             # sys.stdout.flush()
 
+        if year == 11:
+            temp_header = []
+            form_final_header(player_vars_header, team_vars_header, global_vars_header, game_vars_header, temp_header)
+
         print "Processing complete for season 20" + "%02d" % (year,)
 
     # create our list of column names
     final_header = []
     form_final_header(player_vars_header, team_vars_header, global_vars_header, game_vars_header, final_header)
 
+    # print list(set(final_header) - set(temp_header))
+    # print list(set(temp_header) - set(final_header))
+
     # create a pandas dataframe containing all our data
     df_final_data = pd.DataFrame.from_records(final_data, columns=final_header)
 
+    print df_final_data.shape
     df_final_data.to_pickle('data.p')
 
     print "FINISHED"
