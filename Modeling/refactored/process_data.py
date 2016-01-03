@@ -7,13 +7,16 @@ import timeit
 import collections
 import pickle
 import sys
+from random import randint
 
 min_year, max_year = 3, 13  # years to iterate over ie 3, 14 means 2003-2014
-history_steps = 8  # num of games back to use for stats
+history_steps = 9  # num of games back to use for stats
 min_player_games = 1  # num of games each player has to play at minimum
 num_players = 9  # number of players to use from roster
 shot_zones = ['atb3', 'c3', 'mid', 'ra', 'paint']  # zones in xefg data
-player_sizes = ['all', 'small']  # sizes in xefg data
+player_sizes = ['big', 'small']  # sizes in xefg data
+bs_stats_to_drop = ['AST', 'BLK', 'FG3A', 'FG3M', 'FGA', 'FGM', 'FTA', 'FTM', 'OREB', 'DREB', 'REB', 'STL', 'TO']
+oord = ['offense', 'defense']
 
 '''
 Helper functions for numeric options on pandas dataframes for performance reasons
@@ -31,6 +34,10 @@ def dict_column_sum(df_sum):
     return dict_sum
 
 
+def del_keys_dict(del_keys, dict):
+    for key in dict.keys():
+        if key in del_keys:
+            del dict[key]
 '''
 Functions that get data from the lines dataframe
 '''
@@ -41,6 +48,8 @@ def get_result(row):
     get_result: gets the line and ATS result from the lines df
     '''
     y = 1 if row['ATSr'] == 'W' else 0
+    if row['ATSr'] == 'P':
+        y = randint(0, 1)
     push = 1 if row['ATSr'] == 'P' else 0
 
     line = float(row['Line'])
@@ -502,13 +511,13 @@ def create_global_xefg_dict(row, global_xefg_dict, colnames):
     global_xefg_dict[curr_date].update(curr_dict)
 
 
-def create_team_shots_dict(row, team_shots_dict, colnames, team_id, size):
+def create_team_shots_dict(row, team_shots_dict, colnames, team_id, size, side):
     '''
     create_team_shots_dict: Helper function to be used with df.apply() to create a dict containing shots data of team defense.
     '''
     game_id = row.pop('game_id')
     curr_dict = collections.OrderedDict((zip(colnames, row.values)))
-    team_shots_dict[team_id][size].update({game_id: curr_dict})
+    team_shots_dict[team_id][size][side].update({game_id: curr_dict})
 
 
 '''
@@ -529,7 +538,7 @@ def calc_player_shots(df_bs, df_player_xefg):
 
     # create a list of desired columns in shots data
     colnames = [zone + '_pps' for zone in shot_zones]
-    colnames = colnames + [zone + '_attempt' for zone in shot_zones]
+    colnames = colnames + [zone + '_freq' for zone in shot_zones]
 
     # create list of all unique player ids in bs data
     player_ids = pd.unique(df_bs.index.get_level_values('PLAYER_ID'))
@@ -555,9 +564,14 @@ def calc_player_shots(df_bs, df_player_xefg):
         # calculate rolling sum over given history window for current player
         df_xefg_sum = pd.rolling_sum(df_curr_player, window=history_steps, min_periods=min_player_games)
 
+        zonecols = [zone + '_attempt' for zone in shot_zones]
+        df_xefg_sum['tot_attempt'] = df_xefg_sum[zonecols].sum(axis=1)
+
         for zone in shot_zones:
             # calculate pps over summed window
             df_xefg_sum[zone + '_pps'] = df_xefg_sum[zone + '_pts'].div(df_xefg_sum[zone + '_attempt'])
+            # calculate frequency of each shot type
+            df_xefg_sum[zone + '_freq'] = df_xefg_sum[zone + '_attempt'].div(df_xefg_sum['tot_attempt'])
 
         # reset PPS to 0 if attempts=0 (to adjust for division by zero)
         df_xefg_sum[(df_xefg_sum.isin({np.inf, -np.inf}))] = 0
@@ -604,37 +618,43 @@ def calc_team_shots(df_team_xefg):
     team_ids = pd.unique(df_team_xefg.index.get_level_values('team_id'))
 
     # dict with keys = team_id, player_size, and game_id. values=defensive shots data for given game and team
-    team_shots_dict = {key: {size: {} for size in player_sizes} for key in team_ids}
+    team_shots_dict = {key: {size: {side: {} for side in oord} for size in player_sizes} for key in team_ids}
 
     for team_id in team_ids:  # iterate through the teams
 
-        # select defensive stats for current team
-        df_curr_team_xefg = df_team_xefg.loc['defense', team_id]
+        for side in oord:
+            # select defensive stats for current team
+            df_curr_team_xefg = df_team_xefg.loc[side, team_id]
 
-        for size in player_sizes:  # iterate through the different player sizes
+            for size in player_sizes:  # iterate through the different player sizes
 
-            # calculate rolling sum over given history window
-            df_team_xefg_sum = pd.rolling_sum(df_curr_team_xefg.loc[size], window=history_steps, min_periods=history_steps)
+                # calculate rolling sum over given history window
+                df_team_xefg_sum = pd.rolling_sum(df_curr_team_xefg.loc[size], window=history_steps, min_periods=history_steps)
 
-            for zone in shot_zones:
-                # calculate pps over summed window
-                df_team_xefg_sum[zone + '_pps'] = df_team_xefg_sum[zone + '_pts'].div(df_team_xefg_sum[zone + '_attempt'])
+                zonecols = [zone + '_attempt' for zone in shot_zones]
+                df_team_xefg_sum['tot_attempt'] = df_team_xefg_sum[zonecols].sum(axis=1)
 
-            # reset PPS to 0 if attempts=0 (to adjust for division by zero)
-            df_team_xefg_sum[(df_team_xefg_sum.isin({np.inf, -np.inf}))] = 0
-            df_team_xefg_sum[np.isnan(df_team_xefg_sum)] = 0
+                for zone in shot_zones:
+                    # calculate pps over summed window
+                    df_team_xefg_sum[zone + '_pps'] = df_team_xefg_sum[zone + '_pts'].div(df_team_xefg_sum[zone + '_attempt'])
+                    # calculate frequency of each shot type
+                    df_team_xefg_sum[zone + '_freq'] = df_team_xefg_sum[zone + '_attempt'].div(df_team_xefg_sum['tot_attempt'])
 
-            # shift game ids by 1 spot, so that data reflects summed games prior to current game
-            df_team_xefg_sum['game_id'] = df_curr_team_xefg.loc[size].game_id
-            df_team_xefg_sum['game_id'] = df_team_xefg_sum.shift(-1)
+                # reset PPS to 0 if attempts=0 (to adjust for division by zero)
+                df_team_xefg_sum[(df_team_xefg_sum.isin({np.inf, -np.inf}))] = 0
+                df_team_xefg_sum[np.isnan(df_team_xefg_sum)] = 0
 
-            # get list of labels for desired columns
-            colnames = [zone + '_pps' for zone in shot_zones]
-            colnames = colnames + [zone + '_attempt' for zone in shot_zones]
-            colnames.append('game_id')
+                # shift game ids by 1 spot, so that data reflects summed games prior to current game
+                df_team_xefg_sum['game_id'] = df_curr_team_xefg.loc[size].game_id
+                df_team_xefg_sum['game_id'] = df_team_xefg_sum.shift(-1)
 
-            # add calculated sum data to team_shots_dict
-            df_team_xefg_sum[colnames].apply((lambda row: create_team_shots_dict(row, team_shots_dict, colnames, team_id, size)), axis=1)
+                # get list of labels for desired columns
+                colnames = [zone + '_pps' for zone in shot_zones]
+                colnames = colnames + [zone + '_freq' for zone in shot_zones]
+                colnames.append('game_id')
+
+                # add calculated sum data to team_shots_dict
+                df_team_xefg_sum[colnames].apply((lambda row: create_team_shots_dict(row, team_shots_dict, colnames, team_id, size, side)), axis=1)
 
     return team_shots_dict
 
@@ -660,13 +680,14 @@ def form_team_vars(home_team_id, away_team_id, game_id, team_shots_dict):
     team_vars = []
     team_vars_header = []
     for size in player_sizes:
-        home_team_vars = team_shots_dict[home_team_id][size][game_id]
-        away_team_vars = team_shots_dict[away_team_id][size][game_id]
+        for side in oord:
+            home_team_vars = team_shots_dict[home_team_id][size][side][game_id]
+            away_team_vars = team_shots_dict[away_team_id][size][side][game_id]
 
-        team_vars.extend(home_team_vars.values())
-        team_vars_header.extend(['home_' + str(size) + '_' + str(key) for key in home_team_vars.keys()])
-        team_vars.extend(away_team_vars.values())
-        team_vars_header.extend(['away_' + str(size) + '_' + str(key) for key in away_team_vars.keys()])
+            team_vars.extend(home_team_vars.values())
+            team_vars_header.extend(['home_' + str(side) + '_' + str(size) + '_' + str(key) for key in home_team_vars.keys()])
+            team_vars.extend(away_team_vars.values())
+            team_vars_header.extend(['away_' + str(side) + '_' + str(size) + '_' + str(key) for key in away_team_vars.keys()])
 
     return team_vars, team_vars_header
 
@@ -757,8 +778,11 @@ def iterate_player_list(player_list, inactive_list, player_shots_dates, player_s
         # mark if active or inactive for current game
         plyr_avg['ACTIVE'] = 0 if player_id in inactive_list else 1
 
+        # delete unwanted stats
+        del_keys_dict(bs_stats_to_drop, plyr_avg)
+
         # mark if home or away player
-        plyr_avg['HOME_TEAM'] = 1 if home else 0
+        # plyr_avg['HOME_TEAM'] = 1 if home else 0
 
         # combine dicts
         plyr_avg.update(plyr_advanced)
@@ -902,7 +926,7 @@ if __name__ == "__main__":
     df_final_data = pd.DataFrame.from_records(final_data, columns=final_header)
 
     print df_final_data.shape
-    df_final_data.to_pickle('data.p')
+    df_final_data.to_pickle('data2.p')
 
     print "FINISHED"
     print("--- %s seconds ---" % (time.time() - start_time))
