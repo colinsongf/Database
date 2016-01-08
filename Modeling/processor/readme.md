@@ -14,6 +14,11 @@ Running multiple jobs lets you produce processed data with different
 parameters to search for the ideal parameters.
 
 ===================================
+Usage
+===================================
+Edit process_data.py with your parameters and run this file.
+
+===================================
 OBJECT STRUCTURE
 ===================================
 Major classes to be aware of:
@@ -50,6 +55,34 @@ a row.
 played in all seasons.
 9. This big list is converted into a pandas dataframe and dumped to disk.
 10. On to the next job
+
+===================================
+WHAT TO EDIT
+===================================
+To add some new data:
+1. Add a function to BoxscoreDataProcessor or ShotsDataProcessor to create that
+stat. Or you can make a new DataProcessor object to do what you want.
+2. Add a line to Player.initialize() or Team.initialize() to initialize the
+blank output variables.
+3. Edit PlayerProcessor or TeamProcessor to execute the DataProcessor method.
+4. Edit Game.form_vars() to add the data into the final row.
+
+Example: If I wanted to add stdev of team-level boxscore data to capture
+variability.
+- I would add a calc_stdev() function in BoxscoreDataProcessor.
+- Then add a team_stdev = {} in Team.initialize().
+- Then set TeamProcessor to execute team.processor.calc_stdev().
+- Then in Game.form_team_vars() I would run team_vars.add_dict(team_stdev)
+to add the data into the final output variables.
+
+To edit what data is selected:
+1. Edit the Game object and the appropriate form_vars() function.
+
+To edit player selection logic:
+1. Edit SeasonProcessor.create_player_lists() or GameProcessor.process_roster()
+
+To add/change what parameters are passed:
+1. Edit JobHandler object.
 
 ===================================
 FILE STRUCTURE
