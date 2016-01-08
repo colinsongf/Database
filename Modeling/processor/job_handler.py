@@ -158,7 +158,7 @@ class JobHandler(object):
         print df_final_data.shape
 
         # write to disk
-        df_final_data.to_csv(path)
+        df_final_data.to_csv('./output/' + path)
         print 'Job Finished: ' + str(path)
         print("Job time: --- %s seconds ---" % (time.time() - job_time))
 

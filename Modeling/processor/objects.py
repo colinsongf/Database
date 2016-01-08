@@ -105,11 +105,13 @@ class Season(object):
 
     def process_objects(self):
         # process all boxscore data at player level
-        for player_id, player in self.players.iteritems():
+        for player in self.players.itervalues():
             player.process_boxscores()
+            player.process_shots()
 
         # process all shots data at team level
-        for team_id, team in self.teams.iteritems():
+        for team in self.teams.itervalues():
+            team.process_boxscores()
             team.process_shots()
 
     def set_player_shot_data(self):  # creates shot data within player objects
@@ -117,9 +119,6 @@ class Season(object):
 
             # initialize shots data
             self.players[player_id].set_shots_data()
-
-            # perform processing tasks
-            self.players[player_id].process_shots()
 
 
 class Game(object):
@@ -285,8 +284,10 @@ class Player(object):
         self.bs_processor.process_sum_avg_stats(self.bs_sum, self.bs_avg, self.team_sum, self.opp_sum, self.data.boxscores.globals, self.bs_advanced)
 
     def process_shots(self):  # performs processing related to shots data
-        # create shots_dict data object to store processed shots data
-        self.shots_dict = self.shots_processor.calc_player_shots(self.shots, self.shots_dates)
+        # only execute if shots data is not blank
+        if (self.shots is not None):
+            # create shots_dict data object to store processed shots data
+            self.shots_dict = self.shots_processor.calc_player_shots(self.shots, self.shots_dates)
 
 
 class Team(object):
@@ -331,9 +332,17 @@ class Team(object):
         # get list of game ids
         self.games = self.boxscore['GAME_ID'].values
 
+        # get list of opp ids and slice dataframe for those games
+        self.opp_ids = self.boxscore['OPP_ID'].values
+        self.opp_boxscore = self.data.boxscores.teams.loc[zip(self.opp_ids, self.dates)]
+
         # initialize blank player lists
         self.player_list = {date: [] for date in self.dates}
         self.inactive_list = {date: [] for date in self.dates}
 
     def process_shots(self):  # process xefg data
         self.shots_data = self.shots_processor.create_team_shots_data(self.shots, self.shots_dates)
+
+    def process_boxscores(self):
+        self.team_sum, self.team_avg = self.bs_processor.calc_sum_avg_stats(self.boxscore, self.dates)
+        self.opp_sum, self.opp_avg = self.bs_processor.calc_sum_avg_stats(self.opp_boxscore, self.dates)

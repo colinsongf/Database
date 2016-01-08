@@ -50,10 +50,10 @@ class BoxscoreDataProcessor(DataProcessor):
 
         return league_stats
 
-    def calc_sum_avg_stats(self, df_player, dates):
+    def calc_sum_avg_stats(self, df_bs, dates):
         '''
-        calc_sum_avg_stats(): Calculates for a given player, rolling sums
-        and averages of boxscore stats.
+        calc_sum_avg_stats(): Calculates for a given boxscore dataframe,
+        rolling sums and averages of boxscore stats.
 
         Returns bs_sum, bs_avg which are dicts. Keys are dates, values are
         dicts with rolling data calculated THROUGH that date.
@@ -62,11 +62,11 @@ class BoxscoreDataProcessor(DataProcessor):
         bs_sum = {key: {} for key in dates}
 
         # select desired columns by selecting columns with float datatype
-        df_player = df_player.select_dtypes(include=[np.float64])
+        df_bs = df_bs.select_dtypes(include=[np.float64])
 
         # use RollingCalculator object to process dataframe
-        self.roller.rolling_sum_to_dict(df_player, bs_sum)
-        self.roller.rolling_avg_to_dict(df_player, bs_avg)
+        self.roller.rolling_sum_to_dict(df_bs, bs_sum)
+        self.roller.rolling_avg_to_dict(df_bs, bs_avg)
 
         return bs_sum, bs_avg
 

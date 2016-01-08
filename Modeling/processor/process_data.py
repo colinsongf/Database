@@ -18,12 +18,12 @@ if __name__ == "__main__":
     '''
 
     # initial processing parameters
-    base_params = {'min_year': 2003, 'max_year': 2003,
+    base_params = {'min_year': 2003, 'max_year': 2005,
                    'history_steps': 8, 'min_player_games': 2,
                    'num_players': 9, 'path': 'output.csv'}
 
     # perform additional jobs with these parameters changed
-    additional_search_params = [{'max_year': 2004, 'path': 'output2.csv'}, {'max_year': 2005, 'path': 'output5.csv'}]
+    additional_search_params = []
 
     # create a list of jobs with specified parameters
     jobhandler = JobHandler(base_params, additional_search_params)
