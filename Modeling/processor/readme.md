@@ -27,6 +27,11 @@ Collects it in one place.
 row for output.
 - DataProcessor objects: Handle all processing tasks related to a certain
 type of data. Ie BoxscoreDataProcessor, ShotsDataProcessor
+- ObjectProcessor objects: Executes processing tasks for given Player or Team
+Ie PlayerProcessor, TeamProcessor
+- Difference between the two above: DataProcessor objects determine
+the nitty gritty of HOW the data is processed. ObjectProcessor determine the
+WHAT of which tasks are done
 
 ===================================
 BASIC FLOW
@@ -64,13 +69,15 @@ season and their associated data.
 Also very important:
 - helpers/processor.py: Contains DataProcessor objects, including
 BoxscoreDataProcessor and ShotsDataProcessor. These Processor objects handle
-all processing tasks.
+all processing tasks. Also contains ObjectProcessor objects. DataProcessor
+objects determine how to process the data and ObjectProcessor objects
+execute the actual high-level processing actions.
 
-JobHandler will create separate instances of each Processor objects for each
+JobHandler will create separate instances of DataProcessor objects for each
 job, with different attributes depending on the parameters corresponding to each
 job.
 
-Modify this file if you want to change the way data is processed
+Modify this file if you want to change anything about the way data is processed
 
 Other stuff:
 - helpers/calculators.py: Helper functions used to do stuff like calculate

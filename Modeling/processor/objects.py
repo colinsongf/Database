@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from helpers.loaders import Loader, Slicer
-from helpers.processors import SeasonProcessor, BoxscoreDataProcessor, ShotsDataProcessor, GameProcessor
+from helpers.processors import *
 from helpers.data_objects import DataVars
 
 
@@ -57,9 +57,8 @@ class Season(object):
         final_header, season_output = [], []
 
         for game in self.games:  # iterate through each game
-
             # create a row of data for each game
-            game_row = game.process_game()
+            game_row = self.process_game(game)
             if game_row:
                 season_output.append(game_row.values)
 
@@ -104,15 +103,38 @@ class Season(object):
         self.data.lines.apply((lambda row: self.games.append(Game(row, self.players, self.teams, self.global_xefg, self.game_processor))), axis=1)
 
     def process_objects(self):
-        # process all boxscore data at player level
+        # process all data at player level
         for player in self.players.itervalues():
-            player.process_boxscores()
-            player.process_shots()
+            PlayerProcessor.process(player)
 
-        # process all shots data at team level
+        # process all data at team level
         for team in self.teams.itervalues():
-            team.process_boxscores()
-            team.process_shots()
+            TeamProcessor.process(team)
+
+    def process_game(self, game):
+        # return blank output if insufficient games played
+        if (game.prev_games < game.processor.history_steps):
+            return None
+
+        # aggregate player-level variables for both teams
+        player_vars = game.processor.form_player_vars(game.player_lists, game.inactive_lists, game.players, game.date)
+
+        # if player history criteria not met, return blank output
+        if not player_vars:
+            return None
+
+        # aggregate team-level variables
+        team_vars = game.processor.form_team_vars(game.home_team, game.away_team, game.date)
+
+        # aggregate global level variables
+        global_vars = game.processor.form_global_vars(game.globals, game.date)
+        game_vars = game.processor.form_game_vars(game.row)
+
+        # collect all variables into one row for output
+        final_row = DataVars()
+        final_row.add_lists_of_datavars(player_vars, team_vars, global_vars, game_vars)
+
+        return final_row
 
     def set_player_shot_data(self):  # creates shot data within player objects
         for player_id in pd.unique(self.data.shots.players.index.get_level_values('player_id').values):  # for all players who took a shot
@@ -183,32 +205,6 @@ class Game(object):
     def __repr__(self):  # string representation of object with print()
         return str(self.id) + ': ' + str(self.home_id) + 'vs. ' + str(self.away_id)
 
-    def process_game(self):
-
-        # return blank output if insufficient games played
-        if (self.prev_games < self.processor.history_steps):
-            return None
-
-        # aggregate player-level variables for both teams
-        player_vars = self.processor.form_player_vars(self.player_lists, self.inactive_lists, self.players, self.date)
-
-        # if player history criteria not met, return blank output
-        if not player_vars:
-            return None
-
-        # aggregate team-level variables
-        team_vars = self.processor.form_team_vars(self.home_team, self.away_team, self.date)
-
-        # aggregate global level variables
-        global_vars = self.processor.form_global_vars(self.globals, self.date)
-        game_vars = self.processor.form_game_vars(self.row)
-
-        # collect all variables into one row for output
-        final_row = DataVars()
-        final_row.add_lists_of_datavars(player_vars, team_vars, global_vars, game_vars)
-
-        return final_row
-
     def create_player_lists(self):
         # access active and inactive lists for current game
         self.player_lists = [self.home_team.player_list[self.date], self.away_team.player_list[self.date]]
@@ -261,11 +257,10 @@ class Player(object):
         self.team_ids = self.boxscore['TEAM_ID'].values
         self.opp_ids = self.boxscore['OPP_ID'].values
 
-        # initialize blank data objects
+        # initialize blank data objects to hold shots data
         self.shots = None
         self.shots_dates = []
-
-        self.bs_advanced = {key: {} for key in self.dates}
+        self.initialize()
 
     def set_shots_data(self):  # populate shots data
 
@@ -273,21 +268,10 @@ class Player(object):
         self.shots = self.data.shots.players.loc[int(self.id)]
         self.shots_dates = self.shots.index.values
 
-    def process_boxscores(self):  # performs processing related to boxscores
-        # calculate rolling sum and average stats
-        self.bs_sum, self.bs_avg = self.bs_processor.calc_sum_avg_stats(self.boxscore, self.dates)
-
-        # calculate rolling sum for team and opp stats
-        self.team_sum, self.opp_sum = self.bs_processor.calc_team_opp_stats(self.team_bs_float, self.team_ids, self.opp_ids, self.dates)
-
-        # fixes percentages and creates advanced stats
-        self.bs_processor.process_sum_avg_stats(self.bs_sum, self.bs_avg, self.team_sum, self.opp_sum, self.data.boxscores.globals, self.bs_advanced)
-
-    def process_shots(self):  # performs processing related to shots data
-        # only execute if shots data is not blank
-        if (self.shots is not None):
-            # create shots_dict data object to store processed shots data
-            self.shots_dict = self.shots_processor.calc_player_shots(self.shots, self.shots_dates)
+    def initialize(self):  # create empty dicts that will later hold output data
+        self.bs_sum, self.bs_avg = {}, {}
+        self.team_sum, self.opp_sum = {}, {}
+        self.bs_advanced = {key: {} for key in self.dates}
 
 
 class Team(object):
@@ -340,9 +324,10 @@ class Team(object):
         self.player_list = {date: [] for date in self.dates}
         self.inactive_list = {date: [] for date in self.dates}
 
-    def process_shots(self):  # process xefg data
-        self.shots_data = self.shots_processor.create_team_shots_data(self.shots, self.shots_dates)
+        # initialize blank data objects
+        self.initialize()
 
-    def process_boxscores(self):
-        self.team_sum, self.team_avg = self.bs_processor.calc_sum_avg_stats(self.boxscore, self.dates)
-        self.opp_sum, self.opp_avg = self.bs_processor.calc_sum_avg_stats(self.opp_boxscore, self.dates)
+    def initialize(self):  # create blank objects that will hold output data
+        self.shots_data = []
+        self.team_sum, self.team_avg = {}, {}
+        self.opp_sum, self.opp_avg = {}, {}

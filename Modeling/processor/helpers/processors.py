@@ -410,6 +410,54 @@ class GameProcessor(object):
         return home_rest, away_rest
 
 
+class ObjectProcessor(object):
+    def __init__(self):
+        pass
+
+
+class PlayerProcessor(ObjectProcessor):
+    @staticmethod
+    def process(player):
+        PlayerProcessor.process_boxscores(player)
+        PlayerProcessor.process_shots(player)
+
+    @staticmethod
+    def process_boxscores(player):
+        # calculate rolling sum and average stats
+        player.bs_sum, player.bs_avg = player.bs_processor.calc_sum_avg_stats(player.boxscore, player.dates)
+
+        # calculate rolling sum for team and opp stats
+        player.team_sum, player.opp_sum = player.bs_processor.calc_team_opp_stats(player.team_bs_float, player.team_ids, player.opp_ids, player.dates)
+
+        # fixes percentages and creates advanced stats
+        player.bs_processor.process_sum_avg_stats(player.bs_sum, player.bs_avg, player.team_sum, player.opp_sum, player.data.boxscores.globals, player.bs_advanced)
+
+    @staticmethod
+    def process_shots(player):  # performs processing related to shots data
+        # only execute if shots data is not blank
+        if (player.shots is not None):
+            # create shots_dict data object to store processed shots data
+            player.shots_dict = player.shots_processor.calc_player_shots(player.shots, player.shots_dates)
+
+
+class TeamProcessor(ObjectProcessor):
+    @staticmethod
+    def process(team):
+        TeamProcessor.process_shots(team)
+        TeamProcessor.process_boxscores(team)
+
+    @staticmethod
+    def process_shots(team):  # process xefg data
+        # creates list of ShotsData objects to store shots data in
+        team.shots_data = team.shots_processor.create_team_shots_data(team.shots, team.shots_dates)
+
+    @staticmethod
+    def process_boxscores(team):
+        # creates dicts with team/opp sum and avg stats
+        team.team_sum, team.team_avg = team.bs_processor.calc_sum_avg_stats(team.boxscore, team.dates)
+        team.opp_sum, team.opp_avg = team.bs_processor.calc_sum_avg_stats(team.opp_boxscore, team.dates)
+
+
 class SeasonProcessor(object):
     def __init__(self):
         pass
