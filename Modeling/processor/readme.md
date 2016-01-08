@@ -71,13 +71,13 @@ variability.
 to add the data into the final output variables.
 
 To edit what data is selected:
-1. Edit the Game object and the appropriate form_vars() function.
+Edit the Game object and the appropriate form_vars() function.
 
 To edit player selection logic:
-1. Edit SeasonProcessor.create_player_lists() or GameProcessor.process_roster()
+Edit SeasonProcessor.create_player_lists() or GameProcessor.process_roster()
 
 To add/change what parameters are passed:
-1. Edit JobHandler object.
+Edit JobHandler object.
 
 ===================================
 FILE STRUCTURE
