@@ -60,12 +60,12 @@ played in all seasons.
 WHAT TO EDIT
 ===================================
 To add some new data:
-1. Add a function to BoxscoreDataProcessor or ShotsDataProcessor to create that
+- Add a function to BoxscoreDataProcessor or ShotsDataProcessor to create that
 stat. Or you can make a new DataProcessor object to do what you want.
-2. Add a line to Player.initialize() or Team.initialize() to initialize the
+- Add a line to Player.initialize() or Team.initialize() to initialize the
 blank output variables.
-3. Edit PlayerProcessor or TeamProcessor to execute the DataProcessor method.
-4. Edit Game.form_vars() to add the data into the final row.
+- Edit PlayerProcessor or TeamProcessor to execute the DataProcessor method.
+- Edit Game.form_vars() to add the data into the final row.
 
 Example: If I wanted to add stdev of team-level boxscore data to capture
 variability.
