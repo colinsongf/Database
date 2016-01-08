@@ -8,15 +8,10 @@ The purpose of the script is to run one or multiple processing jobs.
 A processing job is defined as: processing data for all specified seasons with
 a given set of parameters.
 Example of a parameter: the number of games over which to calculate a
-moving average.
+moving average. Running multiple jobs lets you produce processed data
+with different parameters to search for the ideal parameters.
 
-Running multiple jobs lets you produce processed data with different
-parameters to search for the ideal parameters.
-
-===================================
-Usage
-===================================
-Edit process_data.py with your parameters and run this file.
+HOW TO USE: Edit process_data.py with your parameters and run this file.
 
 ===================================
 OBJECT STRUCTURE
