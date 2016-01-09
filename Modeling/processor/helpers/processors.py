@@ -4,7 +4,7 @@ import utilities
 import calculators
 import data_objects
 import df_manipulators
-from scipy.stats import randint
+from numpy.random import randint
 
 
 class DataProcessor(object):
@@ -374,9 +374,10 @@ class GameProcessor(object):
         home_rest, away_rest = self.get_rest(row)
         home_id, away_id = self.get_team_ids(row)
         game_id = row.name
+        total = row['Total']
 
         # collects info into a dict
-        datum = {'y': y, 'over': over, 'LINE': line, 'push': push, 'home_rest': home_rest, 'away_rest': away_rest, 'home_id': home_id, 'away_id': away_id, 'game_id': game_id}
+        datum = {'y': y, 'over': over, 'LINE': line, 'push': push, 'home_rest': home_rest, 'away_rest': away_rest, 'home_id': home_id, 'away_id': away_id, 'game_id': game_id, 'total': total}
 
         # converts dict into a DataVars object
         game_vars = data_objects.DataVars()

@@ -18,7 +18,7 @@ if __name__ == "__main__":
     '''
 
     # initial processing parameters
-    base_params = {'min_year': 2003, 'max_year': 2005,
+    base_params = {'min_year': 2003, 'max_year': 2013,
                    'history_steps': 8, 'min_player_games': 2,
                    'num_players': 9, 'path': 'output.csv'}
 

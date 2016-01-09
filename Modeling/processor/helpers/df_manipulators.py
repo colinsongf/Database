@@ -42,14 +42,17 @@ class RollingCalculator(object):
         # create a dataframe containing rolling sum data
         df_sums = pd.rolling_sum(df, window=self.steps, min_periods=self.min_games)
 
-        # Convert to dict
         df_sums.apply((lambda row: dict_from_row(row, dict_with_dates)), axis=1)
+
+        # return df_sums.to_dict('index')
 
     def rolling_avg_to_dict(self, df, dict_with_dates):
         '''
         rolling_avg_to_dict: Same as rolling_sum but with a rolling mean
         '''
         df_avg = pd.rolling_mean(df, window=self.steps, min_periods=self.min_games)
+
+        # return df_avg.to_dict('index')
         df_avg.apply((lambda row: dict_from_row(row, dict_with_dates)), axis=1)
 
     def rolling_shots_to_dict(self, df, dict_with_dates, colnames):
@@ -58,7 +61,6 @@ class RollingCalculator(object):
         column names to use for data. Populates the data into a dict keyed by
         dates.
         '''
-
         # calculate rolling sum
         df_xefg_sum = pd.rolling_sum(df, window=self.steps, min_periods=self.min_games)
 
@@ -79,5 +81,6 @@ class RollingCalculator(object):
         df_xefg_sum[(df_xefg_sum.isin({np.inf, -np.inf}))] = 0
         df_xefg_sum[np.isnan(df_xefg_sum)] = 0
 
+        # return df_xefg_sum[colnames].to_dict('index')
         # populate player shots dict with calculated data
         df_xefg_sum[colnames].apply((lambda row: dict_from_row(row, dict_with_dates)), axis=1)
