@@ -207,7 +207,7 @@ class Game(object):
 
     def create_player_lists(self):
         # access active and inactive lists for current game
-        self.player_lists = [self.home_team.player_list[self.date], self.away_team.player_list[self.date]]
+        self.player_lists = [self.home_team.player_list[self.home_prev_date], self.away_team.player_list[self.away_prev_date]]
         self.inactive_lists = [self.home_team.inactive_list[self.date], self.away_team.inactive_list[self.date]]
 
 
