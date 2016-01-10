@@ -235,6 +235,11 @@ def create_bs(df_lines):
 
         df_team_bs = df_team_bs.drop(['TEAM_NAME', 'TEAM_CITY'], axis=1)
         print df_bs['START_POSITION'].isnull().sum()
+
+        print df_bs['START_POSITION'].value_counts(dropna=False)
+
+        print df_bs[df_bs['START_POSITION'].isnull()]
+
         print df_bs['Date'].isnull().sum()
         print df_bs.shape
         # write to hdf file for storage
@@ -301,6 +306,8 @@ def add_shots(c, m):
 
 
 def create_shots(df_lines):
+    df_dates = pd.read_csv('./preprocessing/missing_dates.csv', index_col='GAME_ID')
+
     for c in range(min_year, max_year + 1):  # iterate through seasons
 
         # initialize dataframe for shots data
@@ -321,13 +328,13 @@ def create_shots(df_lines):
             df_shots = pd.concat([df_shots, df_add])
 
             # print year and game number for progress tracking
-            print year_indicator + ': ' + str(m)
+            # print year_indicator + ': ' + str(m)
 
         # select lines data for current year
-        df_lines = df_lines[df_lines['Season'] == int(season_cond)]
+        df_lines_curr = df_lines[df_lines['Season'] == int(season_cond)]
 
         # add date column to dataframe
-        df_shots = add_date_to_df(df_lines, df_shots)
+        df_shots = add_date_to_df(df_lines_curr, df_shots)
         df_shots = move_last_column_to_first(df_shots)
         print 'Added date column'
 
@@ -335,11 +342,22 @@ def create_shots(df_lines):
         df_shots = set_opp_id(df_shots)
         print 'Added opponent id column'
 
+        df_shots = df_shots.set_index('GAME_ID')
+
+        for game_id in pd.unique(df_dates.index.values):
+            if game_id in df_shots.index.values:
+                df_shots.loc[game_id, 'Date'] = df_dates.at[game_id, 'Date']
+
+        df_shots = df_shots.reset_index()
+
+        print df_shots['Date'].isnull().sum()
+        print df_shots['Date'].head(5)
+
         # naming output file
         output_name = 'shots' + year_indicator + '.h5'
 
         # export to hdf format with compression level
-        df_shots.to_hdf(output_name, 'df_shots',
+        df_shots.to_hdf('./data/temp/' + output_name, 'df_shots',
                         format='table', mode='w', complevel=6, complib='blosc')
 
 
@@ -399,13 +417,15 @@ def load_df_lines():
 
 if __name__ == "__main__":
     df_lines = load_df_lines()
-    create_bs(df_lines)
+    create_shots(df_lines)
 
     # df_bs = pd.read_hdf('./data/temp/bs03.h5', 'df_bs')
-    # df_bs2 = pd.read_hdf('./data/players/bs03.h5', 'df_bs')
+    # df_bs2 = pd.read_hdf('./data/players/bs09.h5', 'df_bs')
 
     # print df_bs.dtypes
-    # print df_bs2.dtypes
+    # print df_bs2['START_POSITION'].value_counts(dropna=False)
+
+    # print df_bs2[df_bs2['START_POSITION'].isnull()]['PLAYER_ID'].value_counts()
 
     # df_teams = pd.read_hdf('./data/temp/tbs02.h5', 'df_team_bs')
 

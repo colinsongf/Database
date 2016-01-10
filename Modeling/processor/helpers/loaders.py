@@ -95,6 +95,11 @@ class Loader(object):
         return DFHolder(Loader.load_lines(), Loader.load_shots(), None)
 
     @staticmethod
+    def load_unsorted_boxscore(year):
+        year_indicator = str(year)[2:4]
+        return pd.read_hdf('./data/players/bs' + year_indicator + '.h5')
+
+    @staticmethod
     def load_boxscores(year):
         '''
         load_boxscores: reads hdf storage files and returns boxscore dataframes for a season

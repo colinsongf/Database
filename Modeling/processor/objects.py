@@ -97,7 +97,7 @@ class Season(object):
         self.teams = {team_id: Team(team_id, self.data, self.boxscore_processor, self.shots_processor) for team_id in pd.unique(self.data.boxscores.teams.index.get_level_values('TEAM_ID').values)}
 
         # create active, inactive player lists within each team object
-        SeasonProcessor.create_player_lists(self.data.boxscores.players, self.teams)
+        SeasonProcessor.create_player_lists(self.teams, self.year)
 
     def create_game_objects(self):  # create game objects with lines dataframe
         self.data.lines.apply((lambda row: self.games.append(Game(row, self.players, self.teams, self.global_xefg, self.game_processor))), axis=1)
@@ -117,7 +117,7 @@ class Season(object):
             return None
 
         # aggregate player-level variables for both teams
-        player_vars = game.processor.form_player_vars(game.player_lists, game.inactive_lists, game.players, game.date)
+        player_vars = game.processor.form_player_vars(game.starter_lists, game.player_lists, game.inactive_lists, game.players, game.date)
 
         # if player history criteria not met, return blank output
         if not player_vars:
@@ -173,6 +173,9 @@ class Game(object):
     Used to verify that history requirement was satisfied.
     - active_lists, inactive_lists: home and away lists of player ids.
     '''
+
+    num_starters = 5
+
     def __init__(self, row, players, teams, global_data, processor):
         # gets row from dataframe (as a copy to avoid future access conflict)
         self.row = row.copy()
@@ -206,9 +209,14 @@ class Game(object):
         return str(self.id) + ': ' + str(self.home_id) + 'vs. ' + str(self.away_id)
 
     def create_player_lists(self):
-        # access active and inactive lists for current game
+        # access player list from previous game
         self.player_lists = [self.home_team.player_list[self.home_prev_date], self.away_team.player_list[self.away_prev_date]]
+
+        # access inactive lists for current game
         self.inactive_lists = [self.home_team.inactive_list[self.date], self.away_team.inactive_list[self.date]]
+
+        # get starting lineups from current game boxscore
+        self.starter_lists = [self.home_team.player_list[self.date][:self.num_starters], self.away_team.player_list[self.date][:self.num_starters]]
 
 
 class Player(object):
@@ -248,7 +256,10 @@ class Player(object):
 
         # slice boxscore dataframe for current player
         self.boxscore = self.data.boxscores.players.loc[self.id]
+
         self.dates = self.boxscore.index.values
+
+        self.position = self.boxscore['START_POSITION'].iat[0] if len(self.boxscore.index) else ''
 
         # select float type cols from team boxscore, for rolling sum calculation
         self.team_bs_float = self.data.boxscores.teams.select_dtypes(include=[np.float64])
@@ -313,6 +324,8 @@ class Team(object):
         self.dates = self.boxscore.index.get_level_values('Date').values
         self.shots_dates = self.shots.index.get_level_values('Date').values
 
+        # get player position
+        # print self.boxscore.head(1)
         # get list of game ids
         self.games = self.boxscore['GAME_ID'].values
 
@@ -331,3 +344,5 @@ class Team(object):
         self.shots_data = []
         self.team_sum, self.team_avg = {}, {}
         self.opp_sum, self.opp_avg = {}, {}
+        self.team_pace = {}
+        self.team_poss = {}

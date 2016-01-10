@@ -98,7 +98,7 @@ def calc_advanced_stats(plyr_sum, team_sum, opp_sum, league_stats):
     plyr_advanced = {}
 
     # adv stat: possession and pace
-    plyr_advanced['PACE'] = TM_PACE
+    # plyr_advanced['PACE'] = TM_PACE
 
     # adv stat: true shot percentage
     if plyr_sum['FGA'] + plyr_sum['FTA'] == 0.0:

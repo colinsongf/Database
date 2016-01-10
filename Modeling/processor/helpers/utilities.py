@@ -43,4 +43,4 @@ def prev_date(dates, curr_date):
     '''
     prev_date: Returns last date within a nparray of dates.
     '''
-    return dates[prev_date_index(dates, curr_date)]
+    return dates[np.searchsorted(dates, curr_date) - 1]

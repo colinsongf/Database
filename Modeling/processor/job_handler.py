@@ -169,6 +169,6 @@ class JobHandler(object):
         '''
         roller = RollingCalculator(params['history_steps'], params['min_player_games'])
 
-        processors = (BoxscoreDataProcessor(roller), ShotsDataProcessor(roller), GameProcessor(params['history_steps'], params['min_player_games'], params['num_players']))
+        processors = (BoxscoreDataProcessor(roller), ShotsDataProcessor(roller), GameProcessor(params['history_steps'], params['min_player_games'], params['num_players'], params['bench_positions']))
 
         return processors

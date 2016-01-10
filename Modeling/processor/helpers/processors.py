@@ -5,6 +5,7 @@ import calculators
 import data_objects
 import df_manipulators
 from numpy.random import randint
+from loaders import Loader
 
 
 class DataProcessor(object):
@@ -146,6 +147,7 @@ class ShotsDataProcessor(DataProcessor):
     def __init__(self, rollingcalculator):
         DataProcessor.__init__(self, rollingcalculator)
         self.colnames = [zone + '_pps' for zone in ShotsDataProcessor.shot_zones] + [zone + '_freq' for zone in ShotsDataProcessor.shot_zones]
+        self.colnames.append('tot_attempt')
 
     def calc_player_shots(self, df_player, shots_dates):
         '''
@@ -238,12 +240,26 @@ class GameProcessor(object):
 
     '''
 
-    def __init__(self, history_steps, min_player_games, num_players):
+    num_starters = 5
+    position_mappings = {'PG': 'Guard', 'SG': 'Wing', 'SF': 'Wing',
+                         'PF': 'Big', 'C': 'Big', 'C-PF': 'Big', 'PF-C': 'Big',
+                         'SF-SG': 'Wing', 'SG-SF': 'Wing', 'PF-SF': 'Wing',
+                         'SF-PF': 'Wing', 'PG-SF': 'Wing', 'SG-PF': 'Wing',
+                         'G-F': 'Wing', 'SG-PG': 'Guard', 'PG-SG': 'Guard',
+                         'F': 'Big', 'C-SF': 'Big'}
+    flex_mappings = {'SG': 'Guard', 'SF': 'Big', 'PF': 'Wing',
+                     'SG-SF': 'Guard', 'SF-SG': 'Guard', 'SG-PF': 'Guard',
+                     'PG-SG': 'Wing', 'SG-PG': 'Wing', 'SF-PF': 'Big'}
+    flex_pos_mappings = position_mappings.copy()
+    flex_pos_mappings.update(flex_mappings)
+
+    def __init__(self, history_steps, min_player_games, num_players, bench_positions):
         self.history_steps = history_steps
         self.min_player_games = min_player_games
         self.num_players = num_players
+        self.bench_positions = bench_positions
 
-    def form_player_vars(self, active_lists, inactive_lists, players, date):
+    def form_player_vars(self, starters, active_lists, inactive_lists, players, date):
         '''
         form_player_vars: Iterates through the player lists of the home_output
         and away teams. Returns a list of DataVars objects, with each element
@@ -254,14 +270,14 @@ class GameProcessor(object):
         and won't be added to the final data output.
         '''
         # iterate through home player list
-        home_output = self.process_roster(active_lists[0], inactive_lists[0], players, date, 'home')
+        home_output = self.process_roster(starters[0], active_lists[0], inactive_lists[0], players, date, 'home')
 
         # return blank output if history criteria not met
         if not home_output:
             return None
 
         # iterate through away player list
-        away_output = self.process_roster(active_lists[1], inactive_lists[1], players, date, 'away')
+        away_output = self.process_roster(starters[1], active_lists[1], inactive_lists[1], players, date, 'away')
 
         # return blank output if history criteria not met
         if not away_output:
@@ -269,7 +285,7 @@ class GameProcessor(object):
 
         return home_output + away_output
 
-    def process_roster(self, active_list, inactive_list, players, date, site):
+    def process_roster(self, starters, player_list, inactive_list, players, date, site):
         '''
         process_roster(): Goes through the home and away player lists.
         Extracts the desired sum, average boxscore/shots data from dicts
@@ -277,53 +293,96 @@ class GameProcessor(object):
 
         Then collects all this data in DataVars objects and outputs them.
         '''
-        roster_output = []
+        starters_output = self.process_starters(starters, players, date, site)
+        bench_output = self.process_bench(starters, player_list, inactive_list, players, date, site)
+
+        if (starters_output is None) or (bench_output is None):
+            return None
+
+        return starters_output + bench_output
+
+    def process_starters(self, starters, players, date, site):
+        starters_output = []
+        for num, player_id in enumerate(starters, start=1):
+            player = players[player_id]
+
+            # skip game if starter with insufficient history
+            if not self.player_history_met(player, date, self.min_player_games):
+                return None
+
+            # get previous dates to use for accessing dicts
+            last_played_date, last_shot_date = utilities.prev_date(player.dates, date), utilities.prev_date(player.shots_dates, date)
+
+            # access the stats dicts from player object for previous game date
+            curr_player_vars = self.create_player_vars(player, last_played_date, last_shot_date, site, 'start_p' + str(num))
+
+            starters_output.append(curr_player_vars)
+
+        if len(starters_output) is not 5:
+            print 'WRONG NUMBER OF STARTERS'
+            return None
+
+        return starters_output
+
+    def process_bench(self, starters, player_list, inactive_list, players, date, site):
+        position_names = sorted(self.bench_positions.keys())
+        bench_output = {key: [] for key in position_names}
+        bench_output.update({'WC': []})
 
         # iterate through each player id on the roster
-        for num, player_id in enumerate(active_list):
+        for num, player_id in enumerate(player_list, start=1):
+
+            # skip player if player was inactive or in the starting lineup
+            if (player_id in inactive_list) or (player_id in starters):
+                continue
 
             # get Player object for given player
             player = players[player_id]
 
-            # skip player if player was inactive
-            if player_id in inactive_list:
-                continue
-
-            # count number of history games for current player
-            game_count = utilities.count_prev_games(player.dates, date)
-            shot_count = utilities.count_prev_games(player.shots_dates, date)
-
             # skip player if insufficient history
-            if min(game_count, shot_count) < self.min_player_games:
+            if not self.player_history_met(player, date, self.min_player_games):
                 continue
 
             # get previous dates to use for accessing dicts
-            last_played_date, last_shot_date = player.dates[game_count - 1], player.shots_dates[shot_count - 1]
+            last_played_date, last_shot_date = utilities.prev_date(player.dates, date), utilities.prev_date(player.shots_dates, date)
 
-            # access the stats dicts from player object for previous game date
-            plyr_avg = player.bs_avg[last_played_date]
-            plyr_advanced = player.bs_advanced[last_played_date]
-            plyr_shots = player.shots_dict[last_shot_date]
+            # create player variables from dicts on previous date
+            curr_player_vars = self.create_player_vars(player, last_played_date, last_shot_date, site, 'bench_p' + str(num))
 
-            # initialize storage variable for player vars with string prefix
-            curr_player_vars = data_objects.DataVars(site + '_p' + str(num + 1))
+            # determine player position and secondary player position
+            mapped_position = self.position_mappings[player.position]
+            flex_position = self.flex_pos_mappings[player.position]
 
-            # Add all data dicts to the DataVars object
-            for data_dict in [plyr_avg, plyr_advanced, plyr_shots]:
-                curr_player_vars.add_dict(data_dict)
+            # add to list of players in the main position if not full
+            if len(bench_output[mapped_position]) < self.bench_positions[mapped_position]:
+                bench_output[mapped_position].append(curr_player_vars)
+                continue
+            # add to secondary position if that list is not full
+            elif len(bench_output[flex_position]) < self.bench_positions[flex_position]:
+                bench_output[flex_position].append(curr_player_vars)
+            # otherwise hold in wildcard position
+            else:
+                bench_output['WC'].append(curr_player_vars)
 
-            # add vars for current player to list of overall output
-            roster_output.append(curr_player_vars)
+        final_bench_output = []
+        # fill in positions w/o enough players using wildcard positions
+        for pos in position_names:
+            max_num_at_position = self.bench_positions[pos]
+            num_players_short = max_num_at_position - len(bench_output[pos])
+            for _ in range(num_players_short):
+                try:
+                    bench_output[pos].append(bench_output['WC'].pop(0))
+                except:
+                    return None
 
-            # return output if desired num players reached
-            if len(roster_output) == self.num_players:
-                return roster_output
+            # if still short return an error
+            if (len(bench_output[pos]) < max_num_at_position):
+                print 'Still short after adding WCs'
+                return None
+            else:
+                final_bench_output.extend(bench_output[pos])
 
-        # return error if finished iteration w/o reaching target number players
-        if len(roster_output) < self.num_players:
-            return None
-
-        return roster_output
+        return final_bench_output
 
     def form_team_vars(self, home_team, away_team, date):
         '''
@@ -384,6 +443,29 @@ class GameProcessor(object):
         game_vars.add_dict(datum)
 
         return game_vars
+
+    @staticmethod
+    def create_player_vars(player, played_date, shot_date, site, prefix):
+        plyr_avg = player.bs_avg[played_date]
+        plyr_advanced = player.bs_advanced[played_date]
+        plyr_shots = player.shots_dict[shot_date]
+
+        # initialize storage variable for player vars with string prefix
+        curr_player_vars = data_objects.DataVars(site + '_' + prefix)
+
+        # Add all data dicts to the DataVars object
+        for data_dict in [plyr_avg, plyr_advanced, plyr_shots]:
+            curr_player_vars.add_dict(data_dict)
+
+        return curr_player_vars
+
+    @staticmethod
+    def player_history_met(player, date, min_games):
+        # count number of history games for current player
+        game_count = utilities.count_prev_games(player.dates, date)
+        shot_count = utilities.count_prev_games(player.shots_dates, date)
+
+        return (min(game_count, shot_count) >= min_games)
 
     @staticmethod
     def count_prev_games(home_team, away_team, date):
@@ -458,6 +540,11 @@ class TeamProcessor(ObjectProcessor):
         team.team_sum, team.team_avg = team.bs_processor.calc_sum_avg_stats(team.boxscore, team.dates)
         team.opp_sum, team.opp_avg = team.bs_processor.calc_sum_avg_stats(team.opp_boxscore, team.dates)
 
+        # calculate advanced team possesion and pace stats
+        team.team_poss = {date: calculators.calc_poss(team.team_sum[date], team.opp_sum[date]) for date in team.dates}
+        team.team_pace = {date: calculators.calc_pace(team.team_sum[date], team.team_poss[date], team.team_poss[date]) for date in team.dates}
+
+
 
 class SeasonProcessor(object):
     def __init__(self):
@@ -465,16 +552,16 @@ class SeasonProcessor(object):
 
     @staticmethod
     def process(season):
-        SeasonProcessor.create_player_lists(season.data.boxscores.players, season.teams)
+        SeasonProcessor.create_player_lists(season.teams, season.year)
 
     @staticmethod
-    def create_player_lists(df_bs, teams):
+    def create_player_lists(teams, year):
         '''
         create_player_lists: Returns a dataframe with a column DND_IDS, which contains a list of player ids for inactive players.
 
         Inactive players are defined as players who were listed as DND (did not dress) or NWT (not with team)
         '''
-
+        df_bs = Loader.load_unsorted_boxscore(year)
         # df_inactives = df_inactives[~np.isnan(df_inactives['Date'])]
 
         # create dataframes with players who DND and NWT
@@ -483,10 +570,10 @@ class SeasonProcessor(object):
         df_nwt = df_without_dnd[df_without_dnd['COMMENT'].str.contains('NWT', na=False)]
 
         # populate list with all player IDs in boxscore
-        df_bs.apply((lambda row:         teams[row['TEAM_ID']].player_list[row.name[1]].append(row.name[0])), axis=1)
+        df_bs.apply((lambda row:         teams[row['TEAM_ID']].player_list[row['Date']].append(row['PLAYER_ID'])), axis=1)
 
         # populate list with all player IDs who DND
-        df_dnd.apply((lambda row: teams[row['TEAM_ID']].inactive_list[row.name[1]].append(row.name[0])), axis=1)
+        df_dnd.apply((lambda row: teams[row['TEAM_ID']].inactive_list[row['Date']].append(row['PLAYER_ID'])), axis=1)
 
         # populate list with all player IDs who were NWT
-        df_nwt.apply((lambda row: teams[row['TEAM_ID']].inactive_list[row.name[1]].append(row.name[0])), axis=1)
+        df_nwt.apply((lambda row: teams[row['TEAM_ID']].inactive_list[row['Date']].append(row['PLAYER_ID'])), axis=1)

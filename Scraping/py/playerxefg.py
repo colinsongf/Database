@@ -25,12 +25,7 @@ errorcount = 0
 # TODO - loop these values from gamefile
 
 
-def write_player_xefg_by_game(gameid, season):
-
-    # read shots and bs files
-    df_shots = pd.read_hdf('%s/shots/shots%s.h5' % (DATAPATH, season), 'df_shots')
-    df_bs = pd.read_hdf('%s/players/bs%s.h5' % (DATAPATH, season), 'df_bs')
-
+def write_player_xefg_by_game(gameid, df_shots, df_bs):
     # confine both files to specific game
     df_shots_game = df_shots[df_shots['GAME_ID'] == gameid]
     date = df_shots_game['Date'].mean()
@@ -180,18 +175,19 @@ def write_player_xefg_by_game(gameid, season):
 
     print('done')
 
+
 def read_gamelist(gamelistall):
-    f = open(gamelistall, 'r')
-    print('opening')
-    f.readline()  # drop headers
-    for r in f.readlines():
-        gameid = int(r.split()[0])
-        season = str(gameid)[1:3]
-        write_player_xefg_by_game(gameid,season)
+    pass
 
 
 def main():
-    read_gamelist(sys.argv[1])
+    for season in range(0, 15):
+        # read shots and bs files
+        df_shots = pd.read_hdf('./data/shots/shots%s.h5' % (season), 'df_shots')
+        df_bs = pd.read_hdf('./data/players/bs%s.h5' % (season), 'df_bs')
+
+        for game_id in pd.unique(df_shots['GAME_ID'].values):
+            write_player_xefg_by_game(game_id, df_shots, df_bs)
 
 if __name__ == '__main__':
     main()
