@@ -10,7 +10,7 @@ import csv
 import numpy as np
 
 f = open('xefg_by_team.csv', 'w')
-gxefg = pd.read_csv('xefg_by_date.csv')
+gxefg_s = pd.read_csv('xefg_by_date.csv')
 pxefg = pd.read_csv('xefg_by_player.csv')
 writer = csv.writer(f, delimiter=',', quoting=csv.QUOTE_MINIMAL)
 f.write('game_id,team_id,team_name,date,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps,location,size,oord,atb3_extrapps,c3_extrapps,mid_extrapps,ra_extrapps,paint_extrapps,atb3_extrapts,c3_extrapts,mid_extrapts,ra_extrapts,paint_extrapts,total_extrapts'+'\n')
@@ -26,23 +26,38 @@ for gameid in pd.unique(pxefg['game_id'].values):
 	for loc in locations:
 		for sizes in p_sizes:
 
+			gxefg = gxefg_s[gxefg_s['player_size']==sizes]
 			shots_game_size = shots_game[shots_game['location']==loc]
 			if sizes == 'All':
 				shots_game_loc = shots_game_size
+
 			else: 
 				shots_game_loc = shots_game_size[shots_game_size['player_size']==sizes]
 
-
-			team_id = int(shots_game_loc['team_id'].mean())
-			team_name = shots_game_loc['team_name'].values
-			date = int(shots_game_loc['date'].mean())
+			try:	
+				team_id = int(shots_game_loc['team_id'].mean())
+			except ValueError:
+				team_id = 'nan'
+			team_name_s = shots_game_loc['team_name'].values
+			try: 
+				team_name= team_name_s[0]
+			except IndexError:
+				team_name = 'nan'	
+			date = shots_game_loc['date'].mean()
 			if loc == 'home':
 				oppoloc = 'away'
 			else:
 				oppoloc = 'home'	
 			shots_game_oppoloc = shots_game[shots_game['location']==oppoloc]
-			oppo_id = int(shots_game_oppoloc['team_id'].mean())
-			oppo_name = shots_game_oppoloc['team_name'].values		
+			try:
+				oppo_id = int(shots_game_oppoloc['team_id'].mean())
+			except ValueError:
+				oppo_id = 'nan'
+			oppo_name_s = shots_game_oppoloc['team_name'].values
+			try:
+				oppo_name = oppo_name_s[0]
+			except IndexError:
+				oppo_name = 'nan'			
 
 			#stats for all
 			atb3_pts = shots_game_loc['atb3_pts'].sum()
@@ -104,13 +119,15 @@ for gameid in pd.unique(pxefg['game_id'].values):
 			if team_paint_pps_extra == paint_pps:
 						team_paint_pps_extra = 0
 						team_paint_pts_extra = 0
-
-			total_pps = (atb3_pts+c3_pts+mid_pts+ra_pts+paint_pts)/(atb3_attempt+c3_attempt+mid_attempt+ra_attempt+paint_attempt)
+			try:
+				total_pps = np.nansum([atb3_pts,c3_pts,mid_pts,ra_pts,paint_pts])/np.nansum([atb3_attempt,c3_attempt,mid_attempt,ra_attempt,paint_attempt])
+			except ZeroDivisionError:
+				total_pps = np.nan
 			total_extrapts = np.nansum([team_atb3_pts_extra,team_c3_pts_extra,team_mid_pts_extra,team_ra_pts_extra,team_paint_pts_extra])
 
 
-			writer.writerow([gameid,team_id,team_name[0],date,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps,loc,sizes,'offense',team_atb3_pps_extra,team_c3_pps_extra,team_mid_pps_extra,team_ra_pps_extra,team_paint_pps_extra,team_atb3_pts_extra,team_c3_pts_extra,team_mid_pts_extra,team_ra_pts_extra,team_paint_pts_extra,total_extrapts])
-			writer.writerow([gameid,oppo_id,oppo_name[0],date,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps,oppoloc,sizes,'defense',team_atb3_pps_extra,team_c3_pps_extra,team_mid_pps_extra,team_ra_pps_extra,team_paint_pps_extra,team_atb3_pts_extra,team_c3_pts_extra,team_mid_pts_extra,team_ra_pts_extra,team_paint_pts_extra,total_extrapts])
+			writer.writerow([gameid,team_id,team_name,date,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps,loc,sizes,'offense',team_atb3_pps_extra,team_c3_pps_extra,team_mid_pps_extra,team_ra_pps_extra,team_paint_pps_extra,team_atb3_pts_extra,team_c3_pts_extra,team_mid_pts_extra,team_ra_pts_extra,team_paint_pts_extra,total_extrapts])
+			writer.writerow([gameid,oppo_id,oppo_name,date,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps,oppoloc,sizes,'defense',team_atb3_pps_extra,team_c3_pps_extra,team_mid_pps_extra,team_ra_pps_extra,team_paint_pps_extra,team_atb3_pts_extra,team_c3_pts_extra,team_mid_pts_extra,team_ra_pts_extra,team_paint_pts_extra,total_extrapts])
 
 
 
