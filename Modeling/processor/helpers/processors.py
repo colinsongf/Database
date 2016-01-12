@@ -410,8 +410,8 @@ class GameProcessor(object):
         global_vars = data_objects.DataVars('global')
 
         # go through lsit of ShotsData object and add into a DataVars object
-        for shots_item in global_list:
-            global_vars.add_shots_data(shots_item, date)
+        # for shots_item in global_list:
+            # global_vars.add_shots_data(shots_item, date)
 
         return global_vars
 
@@ -543,7 +543,6 @@ class TeamProcessor(ObjectProcessor):
         # calculate advanced team possesion and pace stats
         team.team_poss = {date: calculators.calc_poss(team.team_sum[date], team.opp_sum[date]) for date in team.dates}
         team.team_pace = {date: calculators.calc_pace(team.team_sum[date], team.team_poss[date], team.team_poss[date]) for date in team.dates}
-
 
 
 class SeasonProcessor(object):

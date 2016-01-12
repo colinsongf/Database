@@ -107,13 +107,13 @@ class JobHandler(object):
             print 'Starting Job #' + str(num) + ': ' + str(params['path'])
 
             # perform job with specified params and processor objects
-            self.perform_job(large_dfs, params['min_year'], params['max_year'], processors, params['path'])
+            self.perform_job(large_dfs, params['min_year'], params['max_year'], processors, params['path'], params['output_format'])
 
         print "ALL JOBS FINISHED"
         print("Total time: --- %s seconds ---" % (time.time() - start_time))
 
     @staticmethod
-    def perform_job(large_dfs, min_year, max_year, processors, path):
+    def perform_job(large_dfs, min_year, max_year, processors, path, format):
         '''
         perform_job: Iterates through all seasons in a specified job. Collects
         data with one row for each game into final_output, a list of lists.
@@ -158,7 +158,12 @@ class JobHandler(object):
         print df_final_data.shape
 
         # write to disk
-        df_final_data.to_csv('./output/' + path)
+        if (format == 'csv'):
+            df_final_data.to_csv('./output/' + path)
+
+        if (format == 'pickle' or format == 'pkl'):
+            df_final_data.to_pickle('./output/' + path)
+
         print 'Job Finished: ' + str(path)
         print("Job time: --- %s seconds ---" % (time.time() - job_time))
 
