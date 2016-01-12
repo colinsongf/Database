@@ -13,22 +13,22 @@ min_player_games = 1
 
 def load_dataframes():
     folder_filepath = '/Users/RL/Dropbox/Public/NBA_data/xefg/'
-    global_filepath = folder_filepath + 'global_xefg_by_date.csv'
+    global_filepath = folder_filepath + 'xefg_by_date.csv'
     df_xefg = pd.read_csv(global_filepath, index_col=['player_size', 'Date'])
 
-    team_filepath = folder_filepath + 'team_xefg.csv'
-    df_team_xefg = pd.read_csv(team_filepath, index_col=['season', 'team_id', 'oord', 'size', 'Date'])
+    team_filepath = folder_filepath + 'xefg_by_team.csv'
+    df_team_xefg = pd.read_csv(team_filepath, index_col=['Season', 'team_id', 'oord', 'size', 'Date'])
 
-    player_filepath = folder_filepath + 'player_xefg.csv'
-    df_player_xefg = pd.read_csv(player_filepath, index_col=['player_id', 'date'])
+    player_filepath = folder_filepath + 'xefg_by_player.csv'
+    df_player_xefg = pd.read_csv(player_filepath, index_col=['player_id', 'Date'])
 
-    lines_filepath = './data/lines/lines.h5'
+    lines_filepath = '/Users/RL/Documents/projects/Database/Modeling/processor/data/lines/lines.h5'
     df_lines = pd.read_hdf(lines_filepath, 'df_lines')
     return df_xefg, df_team_xefg, df_player_xefg, df_lines
 
 
 def write_dataframe(df, name):
-    filepath = './data/temp/' + name + '.h5'
+    filepath = '/Users/RL/Documents/projects/Database/Modeling/processor/data/temp/' + name + '.h5'
     table_name = 'df_' + name
     df.to_hdf(filepath, table_name, format='table', mode='w', complevel=6, complib='blosc')
 
@@ -61,7 +61,9 @@ if __name__ == "__main__":
     df_xefg, df_team_xefg, df_player_xefg, df_lines = load_dataframes()
 
     print df_xefg.sample(5)
-    # write_dataframe(df_xefg, 'global_xefg')
+    write_dataframe(df_xefg, 'global_xefg')
+    write_dataframe(df_team_xefg, 'team_xefg')
+    write_dataframe(df_player_xefg, 'player_xefg')
 
 
     '''

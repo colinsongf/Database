@@ -61,6 +61,7 @@ class RollingCalculator(object):
         column names to use for data. Populates the data into a dict keyed by
         dates.
         '''
+        # df = df.select_dtypes(include=[float, int])
         # calculate rolling sum
         df_xefg_sum = pd.rolling_sum(df, window=self.steps, min_periods=self.min_games)
 

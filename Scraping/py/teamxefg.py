@@ -1,5 +1,5 @@
 '''
-generate team offense and defensive xefg and extra pts/pps from player and global xefg files 
+generate team offense and defensive xefg and extra pts/pps from player and global xefg files
 
 '''
 
@@ -18,7 +18,7 @@ locations = ['home','away']
 p_sizes = ['All','Big','Small']
 
 
-#for each game_id, generate 12 rows of data 
+#for each game_id, generate 12 rows of data
 for gameid in pd.unique(pxefg['game_id'].values):
 	print gameid
 	#generate home offense/defense stats for all, big, small
@@ -31,23 +31,23 @@ for gameid in pd.unique(pxefg['game_id'].values):
 			if sizes == 'All':
 				shots_game_loc = shots_game_size
 
-			else: 
+			else:
 				shots_game_loc = shots_game_size[shots_game_size['player_size']==sizes]
 
-			try:	
+			try:
 				team_id = int(shots_game_loc['team_id'].mean())
 			except ValueError:
 				team_id = 'nan'
 			team_name_s = shots_game_loc['team_name'].values
-			try: 
+			try:
 				team_name= team_name_s[0]
 			except IndexError:
-				team_name = 'nan'	
-			date = shots_game_loc['date'].mean()
+				team_name = 'nan'
+			date = shots_game_loc['Date'].mean()
 			if loc == 'home':
 				oppoloc = 'away'
 			else:
-				oppoloc = 'home'	
+				oppoloc = 'home'
 			shots_game_oppoloc = shots_game[shots_game['location']==oppoloc]
 			try:
 				oppo_id = int(shots_game_oppoloc['team_id'].mean())
@@ -57,11 +57,11 @@ for gameid in pd.unique(pxefg['game_id'].values):
 			try:
 				oppo_name = oppo_name_s[0]
 			except IndexError:
-				oppo_name = 'nan'			
+				oppo_name = 'nan'
 
 			#stats for all
 			atb3_pts = shots_game_loc['atb3_pts'].sum()
-			atb3_attempt = shots_game_loc['atb3_attempt'].sum()		
+			atb3_attempt = shots_game_loc['atb3_attempt'].sum()
 			try:
 				atb3_pps = atb3_pts/atb3_attempt
 			except ZeroDivisionError:
@@ -77,7 +77,7 @@ for gameid in pd.unique(pxefg['game_id'].values):
 			try:
 				c3_pps = c3_pts/c3_attempt
 			except ZeroDivisionError:
-				c3_pps = 0	
+				c3_pps = 0
 			team_c3_pps_extra = c3_pps - gxefg[gxefg['date']==date]['c3_pps'].sum()
 			team_c3_pts_extra = team_c3_pps_extra*c3_attempt
 			if team_c3_pps_extra == c3_pps:
@@ -89,7 +89,7 @@ for gameid in pd.unique(pxefg['game_id'].values):
 			try:
 				mid_pps = mid_pts/mid_attempt
 			except ZeroDivisionError:
-				mid_pps = 0	
+				mid_pps = 0
 			team_mid_pps_extra = mid_pps - gxefg[gxefg['date']==date]['mid_pps'].sum()
 			team_mid_pts_extra = team_mid_pps_extra*mid_attempt
 			if team_mid_pps_extra == mid_pps:
@@ -101,7 +101,7 @@ for gameid in pd.unique(pxefg['game_id'].values):
 			try:
 				ra_pps = ra_pts/ra_attempt
 			except ZeroDivisionError:
-				ra_pps = 0	
+				ra_pps = 0
 			team_ra_pps_extra = ra_pps - gxefg[gxefg['date']==date]['ra_pps'].sum()
 			team_ra_pts_extra = team_ra_pps_extra*ra_attempt
 			if team_ra_pps_extra == ra_pps:
@@ -128,7 +128,3 @@ for gameid in pd.unique(pxefg['game_id'].values):
 
 			writer.writerow([gameid,team_id,team_name,date,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps,loc,sizes,'offense',team_atb3_pps_extra,team_c3_pps_extra,team_mid_pps_extra,team_ra_pps_extra,team_paint_pps_extra,team_atb3_pts_extra,team_c3_pts_extra,team_mid_pts_extra,team_ra_pts_extra,team_paint_pts_extra,total_extrapts])
 			writer.writerow([gameid,oppo_id,oppo_name,date,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps,oppoloc,sizes,'defense',team_atb3_pps_extra,team_c3_pps_extra,team_mid_pps_extra,team_ra_pps_extra,team_paint_pps_extra,team_atb3_pts_extra,team_c3_pts_extra,team_mid_pts_extra,team_ra_pts_extra,team_paint_pts_extra,total_extrapts])
-
-
-
-

@@ -33,9 +33,9 @@ if __name__ == "__main__":
     '''
 
     # initial processing parameters
-    base_params = {'min_year': 2003, 'max_year': 2013,
+    base_params = {'min_year': 2000, 'max_year': 2013,
                    'history_steps': 7, 'min_player_games': 2,
-                   'num_players': 9, 'path': 'output_3.pkl',
+                   'num_players': 9, 'path': 'output_14yrs.pkl',
                    'bench_positions': {'Guard': 1, 'Wing': 1, 'Big': 1},
                    'output_format': 'pickle'
                    }
@@ -43,17 +43,8 @@ if __name__ == "__main__":
     # perform additional jobs with these parameters changed
     additional_search_params = []
 
-    for var in range(4, 21):
-        filename = 'output_' + str(var) + '.pkl'
-        additional_search_params.append({'path': filename, 'history_steps': var})
-
     # create a list of jobs with specified parameters
     jobhandler = JobHandler(base_params, additional_search_params)
 
     # perform all processing jobs
     jobhandler.process_jobs()
-
-    fit_trees_model(base_params['path'])
-
-    for param_set in additional_search_params:
-        fit_trees_model(param_set['path'])

@@ -142,7 +142,7 @@ class ShotsDataProcessor(DataProcessor):
     # class attributes laying out the structure of the xefg data
     oord = ('offense', 'defense')
     shot_zones = ('atb3', 'c3', 'mid', 'ra', 'paint')
-    player_sizes = ('big', 'small')
+    player_sizes = ('Big', 'Small')
 
     def __init__(self, rollingcalculator):
         DataProcessor.__init__(self, rollingcalculator)
@@ -188,8 +188,9 @@ class ShotsDataProcessor(DataProcessor):
         '''
         team_shots_dict = {key: {} for key in shots_dates}
 
+        team_colnames = self.colnames + ['total_extrapts']
         # Use RollingCalculator object to calculate rolling sums
-        self.roller.rolling_shots_to_dict(df_team, team_shots_dict, self.colnames)
+        self.roller.rolling_shots_to_dict(df_team, team_shots_dict, team_colnames)
 
         return team_shots_dict
 
