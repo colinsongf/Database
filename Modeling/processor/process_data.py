@@ -1,4 +1,5 @@
 from job_handler import JobHandler
+from classifier import fit_xgb_model
 
 if __name__ == "__main__":
 
@@ -15,13 +16,35 @@ if __name__ == "__main__":
     additional_search_params = [] if no additional jobs
 
     Note: Change the path param from base or you will overwrite the initial job.
+
+    Params:
+    - min_year, max_year: range of seasons to process. Full range is 2000-2014
+    - history_steps: number of games to calculate a moving average over. also
+    the minimum number of games in team histories before game counts
+    - min_player_games: minimum number of games played by a player to be
+    included in a game history
+    - num_players: deprecated. previously was the number of players to take
+    from each roster
+    - bench_positions: categorizes bench players by category, then takes
+    this number from each position to add to the final roster
+    - path: filename of output file
+    - output_format: takes arguments csv, pkl, or pickle. outputs dataframe
+    in corresponding format
     '''
 
     # initial processing parameters
+<<<<<<< HEAD
     base_params = {'min_year': 2000, 'max_year': 2014,
                    'history_steps': 7, 'min_player_games': 2,
                    'num_players': 9, 'path': 'output_test_ke.csv',
                    'bench_positions': {'Guard': 1, 'Wing': 1, 'Big': 1}
+=======
+    base_params = {'min_year': 2000, 'max_year': 2013,
+                   'history_steps': 7, 'min_player_games': 2,
+                   'num_players': 9, 'path': 'output_14yrs.pkl',
+                   'bench_positions': {'Guard': 1, 'Wing': 1, 'Big': 1},
+                   'output_format': 'pickle'
+>>>>>>> origin/master
                    }
 
     # perform additional jobs with these parameters changed
