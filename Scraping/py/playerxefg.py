@@ -18,6 +18,7 @@ f = open('xefg_by_player.csv', 'w')
 writer = csv.writer(f, delimiter=',', quoting=csv.QUOTE_MINIMAL)
 f.write('player_id,player_name,player_size,team_name,team_id,location,game_id,Date,Season,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps'+'\n')
 
+#need to change carmelo to big for '12 and '13 reason, and beasly to big for game 021201227
 
 #get teamid, location, and player size
 
