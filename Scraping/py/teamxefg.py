@@ -13,7 +13,7 @@ f = open('xefg_by_team.csv', 'w')
 gxefg_s = pd.read_csv('xefg_by_date.csv')
 pxefg = pd.read_csv('xefg_by_player.csv')
 writer = csv.writer(f, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-f.write('game_id,team_id,team_name,date,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps,location,size,oord,atb3_extrapps,c3_extrapps,mid_extrapps,ra_extrapps,paint_extrapps,atb3_extrapts,c3_extrapts,mid_extrapts,ra_extrapts,paint_extrapts,total_extrapts'+'\n')
+f.write('game_id,team_id,team_name,Date,Season,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps,location,size,oord,atb3_extrapps,c3_extrapps,mid_extrapps,ra_extrapps,paint_extrapps,atb3_extrapts,c3_extrapts,mid_extrapts,ra_extrapts,paint_extrapts,total_extrapts'+'\n')
 locations = ['home','away']
 p_sizes = ['All','Big','Small']
 
@@ -34,30 +34,20 @@ for gameid in pd.unique(pxefg['game_id'].values):
 			else: 
 				shots_game_loc = shots_game_size[shots_game_size['player_size']==sizes]
 
-			try:	
-				team_id = int(shots_game_loc['team_id'].mean())
-			except ValueError:
-				team_id = 'nan'
+			team_id = int(shots_game_loc['team_id'].mean())
 			team_name_s = shots_game_loc['team_name'].values
-			try: 
-				team_name= team_name_s[0]
-			except IndexError:
-				team_name = 'nan'	
-			date = shots_game_loc['date'].mean()
+			season = shots_game_loc['Season'].mean()
+			team_name= team_name_s[0]
+			date = shots_game_loc['Date'].mean()
 			if loc == 'home':
 				oppoloc = 'away'
 			else:
 				oppoloc = 'home'	
 			shots_game_oppoloc = shots_game[shots_game['location']==oppoloc]
-			try:
-				oppo_id = int(shots_game_oppoloc['team_id'].mean())
-			except ValueError:
-				oppo_id = 'nan'
+			oppo_id = int(shots_game_oppoloc['team_id'].mean())
 			oppo_name_s = shots_game_oppoloc['team_name'].values
-			try:
-				oppo_name = oppo_name_s[0]
-			except IndexError:
-				oppo_name = 'nan'			
+			oppo_name = oppo_name_s[0]
+						
 
 			#stats for all
 			atb3_pts = shots_game_loc['atb3_pts'].sum()
@@ -126,8 +116,8 @@ for gameid in pd.unique(pxefg['game_id'].values):
 			total_extrapts = np.nansum([team_atb3_pts_extra,team_c3_pts_extra,team_mid_pts_extra,team_ra_pts_extra,team_paint_pts_extra])
 
 
-			writer.writerow([gameid,team_id,team_name,date,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps,loc,sizes,'offense',team_atb3_pps_extra,team_c3_pps_extra,team_mid_pps_extra,team_ra_pps_extra,team_paint_pps_extra,team_atb3_pts_extra,team_c3_pts_extra,team_mid_pts_extra,team_ra_pts_extra,team_paint_pts_extra,total_extrapts])
-			writer.writerow([gameid,oppo_id,oppo_name,date,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps,oppoloc,sizes,'defense',team_atb3_pps_extra,team_c3_pps_extra,team_mid_pps_extra,team_ra_pps_extra,team_paint_pps_extra,team_atb3_pts_extra,team_c3_pts_extra,team_mid_pts_extra,team_ra_pts_extra,team_paint_pts_extra,total_extrapts])
+			writer.writerow([gameid,team_id,team_name,date,season,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps,loc,sizes,'offense',team_atb3_pps_extra,team_c3_pps_extra,team_mid_pps_extra,team_ra_pps_extra,team_paint_pps_extra,team_atb3_pts_extra,team_c3_pts_extra,team_mid_pts_extra,team_ra_pts_extra,team_paint_pts_extra,total_extrapts])
+			writer.writerow([gameid,oppo_id,oppo_name,date,season,atb3_pts,atb3_attempt,atb3_pps,c3_pts,c3_attempt,c3_pps,mid_pts,mid_attempt,mid_pps,ra_pts,ra_attempt,ra_pps,paint_pts,paint_attempt,paint_pps,total_pps,oppoloc,sizes,'defense',team_atb3_pps_extra,team_c3_pps_extra,team_mid_pps_extra,team_ra_pps_extra,team_paint_pps_extra,team_atb3_pts_extra,team_c3_pts_extra,team_mid_pts_extra,team_ra_pts_extra,team_paint_pts_extra,total_extrapts])
 
 
 
