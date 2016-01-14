@@ -135,6 +135,9 @@ class Loader(object):
         df_player_xefg = pd.read_hdf(xefg_path + 'player_xefg.h5', 'df_player_xefg')
         df_global_xefg = pd.read_hdf(xefg_path + 'global_xefg.h5', 'df_global_xefg')
 
+        df_team_xefg = df_team_xefg.drop(['team_name', 'location'], axis=1)
+        df_player_xefg = df_player_xefg.drop(['player_name', 'team_name', 'location', 'player_size'], axis=1)
+
         df_team_xefg.sort_index(inplace=True)
         df_player_xefg.sort_index(inplace=True)
         df_global_xefg.sort_index(inplace=True)
